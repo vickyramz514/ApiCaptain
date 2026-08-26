@@ -68,7 +68,7 @@ Error:
 
 ## Future expansion (not implemented)
 
-- Phase 2: Zod / JS / Axios / Fetch
+- Phase 2: React Native Axios / Fetch API code generation (implemented)
 - Phase 3: React Query / OpenAPI / saved projects
 - Phase 4: Auth / subscriptions / usage limits
 - Phase 5: AI / teams / workspaces

@@ -25,6 +25,44 @@ export interface GenerateTypeScriptData {
 
 export type GenerateTypeScriptResponse = ApiSuccessResponse<GenerateTypeScriptData>;
 
+/** Phase 2 — React Native API code generation */
+export type HttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
+
+export type ApiFramework = 'react-native';
+
+export type HttpLibrary = 'axios' | 'fetch';
+
+export interface GenerateApiCodeRequest {
+  method: HttpMethod;
+  endpoint: string;
+  requestJson?: unknown | null;
+  responseJson: unknown;
+  framework: ApiFramework;
+  library: HttpLibrary;
+}
+
+export interface GeneratedFile {
+  filename: string;
+  content: string;
+  language: 'typescript';
+}
+
+export interface GenerateApiCodeData {
+  files: GeneratedFile[];
+  meta: {
+    baseName: string;
+    functionName: string;
+    requestTypeName: string | null;
+    responseTypeName: string;
+    method: HttpMethod;
+    endpoint: string;
+    framework: ApiFramework;
+    library: HttpLibrary;
+  };
+}
+
+export type GenerateApiCodeResponse = ApiSuccessResponse<GenerateApiCodeData>;
+
 export interface ApiError {
   code: string;
   message: string;

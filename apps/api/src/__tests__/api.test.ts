@@ -121,3 +121,76 @@ test('POST /api/v1/generate/typescript rejects empty body object without json', 
     assert.equal(body.error.code, 'MISSING_FIELD');
   });
 });
+
+test('POST /api/v1/generate/api-code axios login flow', async () => {
+  const app = createApp();
+  await withServer(app, async (baseUrl) => {
+    const response = await fetch(`${baseUrl}/api/v1/generate/api-code`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        method: 'POST',
+        endpoint: '/api/login',
+        framework: 'react-native',
+        library: 'axios',
+        requestJson: { email: 'john@test.com', password: '123456' },
+        responseJson: {
+          token: 'abc123',
+          user: { id: 1, name: 'John', email: 'john@test.com' },
+        },
+      }),
+    });
+
+    const body = (await response.json()) as {
+      success: boolean;
+      data: { files: Array<{ filename: string; content: string }> };
+    };
+
+    assert.equal(response.status, 200);
+    assert.equal(body.success, true);
+    assert.equal(body.data.files[0]?.filename, 'login.types.ts');
+    assert.equal(body.data.files[1]?.filename, 'login.api.ts');
+    assert.match(body.data.files[0]!.content, /LoginRequest/);
+    assert.match(body.data.files[1]!.content, /axios\.post/);
+  });
+});
+
+test('POST /api/v1/generate/api-code rejects invalid method', async () => {
+  const app = createApp();
+  await withServer(app, async (baseUrl) => {
+    const response = await fetch(`${baseUrl}/api/v1/generate/api-code`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        method: 'OPTIONS',
+        endpoint: '/api/login',
+        framework: 'react-native',
+        library: 'axios',
+        responseJson: { ok: true },
+      }),
+    });
+    const body = (await response.json()) as { success: boolean; error: { code: string } };
+    assert.equal(response.status, 400);
+    assert.equal(body.error.code, 'INVALID_METHOD');
+  });
+});
+
+test('POST /api/v1/generate/api-code requires requestJson for POST', async () => {
+  const app = createApp();
+  await withServer(app, async (baseUrl) => {
+    const response = await fetch(`${baseUrl}/api/v1/generate/api-code`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        method: 'POST',
+        endpoint: '/api/login',
+        framework: 'react-native',
+        library: 'fetch',
+        responseJson: { token: 'x' },
+      }),
+    });
+    const body = (await response.json()) as { success: boolean; error: { code: string } };
+    assert.equal(response.status, 400);
+    assert.equal(body.error.code, 'MISSING_REQUEST_BODY');
+  });
+});

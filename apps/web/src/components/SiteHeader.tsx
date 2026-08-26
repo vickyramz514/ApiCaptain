@@ -8,13 +8,11 @@ export function SiteHeader() {
           </div>
           <div>
             <p className="text-base font-semibold text-white">ApiCaptain</p>
-            <p className="text-xs text-slate-400">Turn APIs into production-ready code.</p>
+            <p className="text-xs text-slate-400">Generate production-ready API code</p>
           </div>
         </div>
-        <nav aria-label="Primary">
-          <span className="rounded-full border border-teal-400/40 bg-teal-400/10 px-3 py-1 text-sm text-teal-200">
-            JSON → TypeScript
-          </span>
+        <nav aria-label="Primary" className="hidden text-sm text-slate-400 sm:block">
+          React Native · TypeScript
         </nav>
       </div>
     </header>

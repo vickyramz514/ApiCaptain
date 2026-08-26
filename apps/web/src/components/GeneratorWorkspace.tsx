@@ -248,6 +248,7 @@ export function GeneratorWorkspace() {
                 value={code}
                 language="typescript"
                 readOnly
+                height={360}
                 ariaLabel="Generated TypeScript editor"
               />
             )}

@@ -2,7 +2,7 @@
 
 **Turn APIs into production-ready code.**
 
-ApiCaptain converts API JSON responses into clean TypeScript interfaces and types.
+ApiCaptain generates production-ready React Native TypeScript API clients from method, endpoint, and request/response JSON — and still supports JSON → TypeScript interfaces.
 
 ## Monorepo architecture
 
@@ -83,6 +83,27 @@ See `.env.example`:
 
 `GET /health`
 
+### Generate TypeScript (Phase 1)
+
+`POST /api/v1/generate/typescript`
+
+### Generate API code (Phase 2)
+
+`POST /api/v1/generate/api-code`
+
+```bash
+curl -s http://localhost:4000/api/v1/generate/api-code \
+  -H 'content-type: application/json' \
+  -d '{
+    "method":"POST",
+    "endpoint":"/api/login",
+    "framework":"react-native",
+    "library":"axios",
+    "requestJson":{"email":"john@test.com","password":"123456"},
+    "responseJson":{"token":"abc123","user":{"id":1,"name":"John","email":"john@test.com"}}
+  }'
+```
+
 ### Generate TypeScript
 
 `POST /api/v1/generate/typescript`
@@ -115,3 +136,4 @@ curl -s http://localhost:4000/api/v1/generate/typescript \
 ## Documentation
 
 - [Phase 1 details](./docs/phase-1.md)
+- [Phase 2 details](./docs/phase-2.md)

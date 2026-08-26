@@ -1,6 +1,8 @@
 import type {
   ApiErrorResponse,
   ApiSuccessResponse,
+  GenerateApiCodeData,
+  GenerateApiCodeRequest,
   GenerateTypeScriptData,
   GenerateTypeScriptRequest,
 } from '@apicaptain/types';
@@ -22,6 +24,22 @@ export class ApiClientError extends Error {
   }
 }
 
+const parseApiResponse = async <T>(response: Response): Promise<T> => {
+  const payload = (await response.json()) as ApiSuccessResponse<T> | ApiErrorResponse;
+
+  if (!response.ok || !payload.success) {
+    const errorPayload = payload as ApiErrorResponse;
+    throw new ApiClientError(
+      errorPayload.error?.code ?? 'REQUEST_FAILED',
+      errorPayload.error?.message ?? 'Request failed',
+      response.status,
+      errorPayload.error?.details,
+    );
+  }
+
+  return payload.data;
+};
+
 export const generateTypeScript = async (
   request: GenerateTypeScriptRequest,
 ): Promise<GenerateTypeScriptData> => {
@@ -31,21 +49,19 @@ export const generateTypeScript = async (
     body: JSON.stringify(request),
   });
 
-  const payload = (await response.json()) as
-    | ApiSuccessResponse<GenerateTypeScriptData>
-    | ApiErrorResponse;
+  return parseApiResponse<GenerateTypeScriptData>(response);
+};
 
-  if (!response.ok || !payload.success) {
-    const errorPayload = payload as ApiErrorResponse;
-    throw new ApiClientError(
-      errorPayload.error?.code ?? 'REQUEST_FAILED',
-      errorPayload.error?.message ?? 'Failed to generate TypeScript',
-      response.status,
-      errorPayload.error?.details,
-    );
-  }
+export const generateApiCode = async (
+  request: GenerateApiCodeRequest,
+): Promise<GenerateApiCodeData> => {
+  const response = await fetch(`${apiBaseUrl()}/api/v1/generate/api-code`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(request),
+  });
 
-  return payload.data;
+  return parseApiResponse<GenerateApiCodeData>(response);
 };
 
 export const EXAMPLE_JSON = `{
@@ -58,4 +74,18 @@ export const EXAMPLE_JSON = `{
     "country": "India"
   },
   "tags": ["developer", "react-native"]
+}`;
+
+export const EXAMPLE_API_REQUEST = `{
+  "email": "john@test.com",
+  "password": "123456"
+}`;
+
+export const EXAMPLE_API_RESPONSE = `{
+  "token": "abc123",
+  "user": {
+    "id": 1,
+    "name": "John",
+    "email": "john@test.com"
+  }
 }`;
