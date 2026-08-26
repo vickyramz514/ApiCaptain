@@ -1,89 +1,117 @@
 # ApiCaptain
 
-Production-ready monorepo for ApiCaptain — a platform for API exploration, JSON schema tooling, and code generation.
+**Turn APIs into production-ready code.**
 
-## Structure
+ApiCaptain converts API JSON responses into clean TypeScript interfaces and types.
+
+## Monorepo architecture
 
 ```
 ApiCaptain/
 ├── apps/
-│   ├── web/          # Next.js frontend (independently deployable)
-│   └── api/          # Express backend (independently deployable)
+│   ├── web/                 # Next.js UI (Monaco editors)
+│   └── api/                 # Express REST API + Prisma
 ├── packages/
-│   ├── types/        # Shared TypeScript types
-│   ├── config/       # Shared configuration helpers
-│   └── generators/   # JSON → TypeScript / Zod / code generation
+│   ├── types/               # Shared request/response contracts
+│   ├── config/              # Shared env/config helpers
+│   └── generators/          # JSON → TypeScript generator
+├── docs/phase-1.md
 ├── package.json
 ├── pnpm-workspace.yaml
-├── turbo.json
-└── tsconfig.json
+└── turbo.json
 ```
 
-## Prerequisites
+Dependency direction:
 
-- Node.js 20+
-- [pnpm](https://pnpm.io) 9+ (repo pinned via `packageManager`)
+- `apps/web` → `@apicaptain/types`
+- `apps/api` → `@apicaptain/types` + `@apicaptain/generators`
+- `@apicaptain/generators` has **no** dependency on Next.js, Express, React, or the database
 
-## Getting started
+## Tech stack
+
+- pnpm workspaces + Turborepo
+- TypeScript everywhere
+- Next.js + Tailwind CSS + Monaco Editor
+- Node.js + Express
+- PostgreSQL + Prisma
+- Node.js native test runner
+
+## Local setup
 
 ```bash
-# Install dependencies
 pnpm install
-
-# Copy environment variables
 cp .env.example .env
-
-# Run all apps in development (web :3000, api :4000)
-pnpm dev
-
-# Build all packages and apps
-pnpm build
-
-# Typecheck the workspace
-pnpm typecheck
-
-# Lint
-pnpm lint
-
-# Test
-pnpm test
 ```
 
-## Workspace packages
+### Database
 
-| Package | Name | Purpose |
-|---------|------|---------|
-| `apps/web` | `@apicaptain/web` | Next.js + Tailwind UI |
-| `apps/api` | `@apicaptain/api` | Express REST API |
-| `packages/types` | `@apicaptain/types` | Shared API contracts |
-| `packages/config` | `@apicaptain/config` | Shared config / env helpers |
-| `packages/generators` | `@apicaptain/generators` | Codegen utilities |
-
-Apps depend on packages via the `workspace:*` protocol.
-
-## Independent deployment
-
-- **Web**: deploy `apps/web` (e.g. Vercel). Set `NEXT_PUBLIC_API_URL` to your API origin.
-- **API**: deploy `apps/api` (e.g. Railway, Render, Fly.io, container). Set `API_PORT`, `CORS_ORIGIN`.
+1. Start PostgreSQL locally.
+2. Set `DATABASE_URL` in `.env`.
+3. Apply migrations and generate the Prisma client:
 
 ```bash
-# Build only the API
-pnpm --filter @apicaptain/api build
+pnpm db:generate
+pnpm db:migrate
+```
 
-# Build only the web app
-pnpm --filter @apicaptain/web build
+Phase 1 generation does **not** require writing to the database. Prisma is ready for future auth/projects/history.
+
+### Development
+
+```bash
+pnpm dev
+```
+
+- Web: http://localhost:3000
+- API: http://localhost:4000
+
+## Environment variables
+
+See `.env.example`:
+
+| Variable | Description |
+|----------|-------------|
+| `DATABASE_URL` | PostgreSQL connection string |
+| `API_PORT` | API port (default `4000`) |
+| `CORS_ORIGIN` | Allowed browser origin |
+| `NEXT_PUBLIC_API_URL` | Browser-facing API base URL |
+| `NEXT_PUBLIC_SITE_URL` | Canonical site URL for SEO |
+
+## API
+
+### Health
+
+`GET /health`
+
+### Generate TypeScript
+
+`POST /api/v1/generate/typescript`
+
+```bash
+curl -s http://localhost:4000/api/v1/generate/typescript \
+  -H 'content-type: application/json' \
+  -d '{
+    "json": {"id":1,"name":"John","profile":{"city":"Chennai"},"tags":["react","react-native"]},
+    "rootName":"User",
+    "outputType":"interface",
+    "optionalProperties":false,
+    "exportTypes":true,
+    "useSemicolon":true
+  }'
 ```
 
 ## Scripts
 
-| Script | Description |
-|--------|-------------|
-| `pnpm dev` | Start all apps in watch mode via Turborepo |
-| `pnpm build` | Build packages then apps |
-| `pnpm typecheck` | Run TypeScript checks across the workspace |
-| `pnpm lint` | Lint all packages |
-| `pnpm test` | Run package tests |
+| Command | Description |
+|---------|-------------|
+| `pnpm dev` | Start API + web |
+| `pnpm build` | Build all packages/apps |
+| `pnpm typecheck` | TypeScript checks |
+| `pnpm lint` | Lint (tsc-based) |
+| `pnpm test` | Unit + API tests |
+| `pnpm db:generate` | Prisma client generate |
+| `pnpm db:migrate` | Apply migrations |
 
-## License
+## Documentation
 
-Private — All rights reserved.
+- [Phase 1 details](./docs/phase-1.md)

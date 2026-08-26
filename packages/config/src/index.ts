@@ -5,6 +5,10 @@ export interface ApiConfig {
   port: number;
   corsOrigin: string;
   nodeEnv: string;
+  databaseUrl: string;
+  bodyLimit: string;
+  rateLimitWindowMs: number;
+  rateLimitMax: number;
 }
 
 export interface WebConfig {
@@ -20,7 +24,8 @@ const toNumber = (value: string | undefined, fallback: number): number => {
   return Number.isFinite(parsed) ? parsed : fallback;
 };
 
-const readEnv = (env?: EnvMap): EnvMap => env ?? (globalThis as { process?: { env?: EnvMap } }).process?.env ?? {};
+const readEnv = (env?: EnvMap): EnvMap =>
+  env ?? (globalThis as { process?: { env?: EnvMap } }).process?.env ?? {};
 
 export const getApiConfig = (env?: EnvMap): ApiConfig => {
   const source = readEnv(env);
@@ -29,6 +34,10 @@ export const getApiConfig = (env?: EnvMap): ApiConfig => {
     port: toNumber(source.API_PORT, 4000),
     corsOrigin: source.CORS_ORIGIN ?? 'http://localhost:3000',
     nodeEnv: source.NODE_ENV ?? 'development',
+    databaseUrl: source.DATABASE_URL ?? '',
+    bodyLimit: source.BODY_LIMIT ?? '1mb',
+    rateLimitWindowMs: toNumber(source.RATE_LIMIT_WINDOW_MS, 60_000),
+    rateLimitMax: toNumber(source.RATE_LIMIT_MAX, 60),
   };
 };
 

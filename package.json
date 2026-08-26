@@ -2,7 +2,7 @@
   "name": "apicaptain",
   "private": true,
   "version": "0.0.0",
-  "description": "ApiCaptain monorepo — API tooling platform",
+  "description": "ApiCaptain — Turn APIs into production-ready code.",
   "packageManager": "pnpm@10.30.3",
   "engines": {
     "node": ">=20"
@@ -14,7 +14,12 @@
     "typecheck": "turbo run typecheck",
     "test": "turbo run test",
     "clean": "turbo run clean && rm -rf node_modules",
-    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\""
+    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\"",
+    "db:generate": "pnpm --filter @apicaptain/api db:generate",
+    "db:migrate": "pnpm --filter @apicaptain/api db:migrate",
+    "db:migrate:dev": "pnpm --filter @apicaptain/api db:migrate:dev",
+    "db:studio": "pnpm --filter @apicaptain/api db:studio",
+    "db:seed": "pnpm --filter @apicaptain/api db:seed"
   },
   "devDependencies": {
     "prettier": "^3.5.3",
@@ -25,7 +30,9 @@
     "onlyBuiltDependencies": [
       "esbuild",
       "sharp",
-      "@tailwindcss/oxide"
+      "@tailwindcss/oxide",
+      "@prisma/engines",
+      "prisma"
     ]
   }
 }

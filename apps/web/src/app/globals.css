@@ -1,13 +1,23 @@
 @import 'tailwindcss';
 
 :root {
-  --background: #0b1220;
-  --foreground: #e8eef9;
-  --accent: #3dd6c6;
+  --background: #020617;
+  --foreground: #e2e8f0;
+}
+
+html,
+body {
+  min-height: 100%;
 }
 
 body {
-  background: radial-gradient(circle at top, #152238 0%, var(--background) 55%);
+  background:
+    radial-gradient(circle at top left, rgba(45, 212, 191, 0.12), transparent 40%),
+    radial-gradient(circle at top right, rgba(56, 189, 248, 0.08), transparent 35%),
+    var(--background);
   color: var(--foreground);
-  min-height: 100vh;
+}
+
+* {
+  box-sizing: border-box;
 }

@@ -1,41 +1,22 @@
-import type { HealthResponse } from '@apicaptain/types';
+import { GeneratorWorkspace } from '../components/GeneratorWorkspace';
+import { SiteHeader } from '../components/SiteHeader';
 
-const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000';
-
-async function fetchHealth(): Promise<HealthResponse | null> {
-  try {
-    const response = await fetch(`${apiUrl}/health`, { cache: 'no-store' });
-    if (!response.ok) return null;
-    return (await response.json()) as HealthResponse;
-  } catch {
-    return null;
-  }
-}
-
-export default async function HomePage() {
-  const health = await fetchHealth();
-
+export default function HomePage() {
   return (
-    <main className="mx-auto flex min-h-screen max-w-3xl flex-col justify-center gap-8 px-6 py-16">
-      <div>
-        <p className="mb-3 text-sm uppercase tracking-[0.2em] text-teal-300/80">ApiCaptain</p>
-        <h1 className="text-4xl font-semibold tracking-tight text-white sm:text-5xl">
-          Monorepo scaffold ready
-        </h1>
-        <p className="mt-4 max-w-2xl text-base leading-relaxed text-slate-300">
-          Next.js frontend, Express API, and shared packages for types, config, and generators.
-          Product features come next — this shell is production-ready architecture.
-        </p>
-      </div>
-
-      <section className="rounded-2xl border border-white/10 bg-white/5 p-6 backdrop-blur">
-        <h2 className="text-sm font-medium uppercase tracking-wide text-slate-400">API health</h2>
-        <p className="mt-3 font-mono text-sm text-slate-200">
-          {health
-            ? `${health.status} · ${health.service} · ${health.version}`
-            : `Waiting for API at ${apiUrl}`}
-        </p>
-      </section>
-    </main>
+    <div className="min-h-screen">
+      <SiteHeader />
+      <main>
+        <div className="mx-auto max-w-7xl px-4 pt-8 sm:px-6 lg:px-8">
+          <h1 className="text-3xl font-semibold tracking-tight text-white sm:text-4xl">
+            JSON to TypeScript Converter
+          </h1>
+          <p className="mt-2 max-w-2xl text-sm leading-relaxed text-slate-400 sm:text-base">
+            Paste an API JSON response and generate clean, production-ready TypeScript interfaces
+            or type aliases — including nested objects and arrays.
+          </p>
+        </div>
+        <GeneratorWorkspace />
+      </main>
+    </div>
   );
 }

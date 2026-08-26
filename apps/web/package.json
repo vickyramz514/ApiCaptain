@@ -9,11 +9,13 @@
     "start": "next start --port 3000",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "lint": "tsc -p tsconfig.json --noEmit",
-    "test": "node -e \"console.log('@apicaptain/web: no tests yet')\"",
+    "test": "node -e \"console.log('@apicaptain/web: no unit tests in Phase 1')\"",
     "clean": "rm -rf .next .turbo *.tsbuildinfo"
   },
   "dependencies": {
     "@apicaptain/types": "workspace:*",
+    "@monaco-editor/react": "^4.7.0",
+    "monaco-editor": "^0.52.2",
     "next": "^15.3.2",
     "react": "^19.1.0",
     "react-dom": "^19.1.0"

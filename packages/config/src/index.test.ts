@@ -6,6 +6,7 @@ test('getApiConfig applies defaults', () => {
   const config = getApiConfig({});
   assert.equal(config.port, 4000);
   assert.equal(config.host, '0.0.0.0');
+  assert.equal(config.rateLimitMax, 60);
 });
 
 test('getWebConfig reads NEXT_PUBLIC_API_URL', () => {
