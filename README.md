@@ -2,7 +2,7 @@
 
 **Turn APIs into production-ready code.**
 
-ApiCaptain generates production-ready React Native TypeScript API clients from method, endpoint, and request/response JSON — and still supports JSON → TypeScript interfaces.
+ApiCaptain generates production-ready API models and clients for React Native, Flutter (Dart), SwiftUI (Swift), Android (Kotlin), and Python — and still supports JSON → TypeScript interfaces.
 
 ## Monorepo architecture
 
@@ -137,3 +137,4 @@ curl -s http://localhost:4000/api/v1/generate/typescript \
 
 - [Phase 1 details](./docs/phase-1.md)
 - [Phase 2 details](./docs/phase-2.md)
+- [Phase 3 details](./docs/phase-3.md)

@@ -69,6 +69,7 @@ Error:
 ## Future expansion (not implemented)
 
 - Phase 2: React Native Axios / Fetch API code generation (implemented)
-- Phase 3: React Query / OpenAPI / saved projects
+- Phase 3: Multi-language generators (Dart/Swift/Kotlin/Python) (implemented)
+- Later: React Query / OpenAPI / saved projects
 - Phase 4: Auth / subscriptions / usage limits
 - Phase 5: AI / teams / workspaces

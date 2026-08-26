@@ -2,15 +2,30 @@
 
 import Editor, { type OnMount } from '@monaco-editor/react';
 
+type EditorLanguage =
+  | 'json'
+  | 'typescript'
+  | 'javascript'
+  | 'python'
+  | 'swift'
+  | 'kotlin'
+  | 'dart'
+  | 'plaintext';
+
 interface CodeEditorProps {
   value: string;
-  language: 'json' | 'typescript';
+  language: EditorLanguage;
   onChange?: (value: string) => void;
   readOnly?: boolean;
   ariaLabel: string;
-  /** Explicit height avoids Monaco collapsing to 0px with height="100%". */
   height?: number | string;
 }
+
+const monacoLanguage = (language: EditorLanguage): string => {
+  if (language === 'dart' || language === 'kotlin') return 'java';
+  if (language === 'swift') return 'swift';
+  return language;
+};
 
 export function CodeEditor({
   value,
@@ -31,7 +46,6 @@ export function CodeEditor({
       readOnly,
       ariaLabel,
     });
-    // Ensure layout after mount in dynamic panels
     window.requestAnimationFrame(() => {
       editor.layout();
     });
@@ -41,8 +55,8 @@ export function CodeEditor({
     <div className="overflow-hidden rounded-xl border border-slate-700/80 bg-[#0f172a]">
       <Editor
         height={height}
-        defaultLanguage={language}
-        language={language}
+        defaultLanguage={monacoLanguage(language)}
+        language={monacoLanguage(language)}
         theme="vs-dark"
         value={value}
         path={`${ariaLabel}-${language}`}

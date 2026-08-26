@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import type { GeneratedFile, HttpLibrary, HttpMethod } from '@apicaptain/types';
+import type { ApiFramework, GeneratedFile, GeneratedLanguage, HttpLibrary, HttpMethod } from '@apicaptain/types';
 import {
   ApiClientError,
   EXAMPLE_API_REQUEST,
@@ -14,11 +14,37 @@ import { CodeEditor } from './CodeEditor';
 const METHODS: HttpMethod[] = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'];
 const BODY_METHODS = new Set<HttpMethod>(['POST', 'PUT', 'PATCH']);
 
+const FRAMEWORKS: Array<{ id: ApiFramework; label: string }> = [
+  { id: 'react-native', label: 'React Native' },
+  { id: 'flutter', label: 'Flutter (Dart)' },
+  { id: 'swiftui', label: 'SwiftUI (Swift)' },
+  { id: 'android', label: 'Android (Kotlin)' },
+  { id: 'python', label: 'Python' },
+];
+
+const editorLanguageFor = (language: GeneratedLanguage) => {
+  switch (language) {
+    case 'typescript':
+      return 'typescript' as const;
+    case 'python':
+      return 'python' as const;
+    case 'swift':
+      return 'swift' as const;
+    case 'kotlin':
+      return 'kotlin' as const;
+    case 'dart':
+      return 'dart' as const;
+    default:
+      return 'plaintext' as const;
+  }
+};
+
 export function ApiCodeWorkspace() {
   const [method, setMethod] = useState<HttpMethod>('POST');
   const [endpoint, setEndpoint] = useState('/api/login');
   const [requestText, setRequestText] = useState(EXAMPLE_API_REQUEST);
   const [responseText, setResponseText] = useState(EXAMPLE_API_RESPONSE);
+  const [framework, setFramework] = useState<ApiFramework>('react-native');
   const [library, setLibrary] = useState<HttpLibrary>('axios');
   const [files, setFiles] = useState<GeneratedFile[]>([]);
   const [activeFile, setActiveFile] = useState(0);
@@ -60,8 +86,8 @@ export function ApiCodeWorkspace() {
       const data = await generateApiCode({
         method,
         endpoint: endpoint.trim(),
-        framework: 'react-native',
-        library,
+        framework,
+        library: framework === 'react-native' ? library : undefined,
         requestJson: needsBody ? requestValidation.value : null,
         responseJson: responseValidation.value,
       });
@@ -140,20 +166,25 @@ export function ApiCodeWorkspace() {
           />
         </label>
         <label className="flex flex-col gap-1 text-sm text-slate-300">
-          Framework
+          Framework / Language
           <select
             className="rounded-lg border border-slate-600 bg-slate-950 px-3 py-2 text-slate-100 outline-none focus:border-teal-400"
-            value="react-native"
-            disabled
+            value={framework}
+            onChange={(event) => setFramework(event.target.value as ApiFramework)}
           >
-            <option value="react-native">React Native</option>
+            {FRAMEWORKS.map((item) => (
+              <option key={item.id} value={item.id}>
+                {item.label}
+              </option>
+            ))}
           </select>
         </label>
         <label className="flex flex-col gap-1 text-sm text-slate-300">
           Library
           <select
-            className="rounded-lg border border-slate-600 bg-slate-950 px-3 py-2 text-slate-100 outline-none focus:border-teal-400"
+            className="rounded-lg border border-slate-600 bg-slate-950 px-3 py-2 text-slate-100 outline-none focus:border-teal-400 disabled:opacity-50"
             value={library}
+            disabled={framework !== 'react-native'}
             onChange={(event) => setLibrary(event.target.value as HttpLibrary)}
           >
             <option value="axios">Axios</option>
@@ -270,7 +301,7 @@ export function ApiCodeWorkspace() {
 
         {status === 'idle' && files.length === 0 ? (
           <div className="flex min-h-[300px] items-center justify-center rounded-xl border border-dashed border-slate-700 bg-slate-900/40 p-6 text-center text-sm text-slate-400">
-            Configure your API and click Generate API Code to produce React Native TypeScript files.
+            Configure your API and click Generate API Code to produce models and clients for your selected language.
           </div>
         ) : status === 'loading' ? (
           <div className="flex min-h-[300px] items-center justify-center rounded-xl border border-slate-700 bg-slate-900/40 p-6 text-sm text-slate-300">
@@ -281,7 +312,7 @@ export function ApiCodeWorkspace() {
             <CodeEditor
               key={currentFile.filename}
               value={currentFile.content}
-              language="typescript"
+              language={editorLanguageFor(currentFile.language)}
               readOnly
               height={360}
               ariaLabel={`Generated ${currentFile.filename}`}

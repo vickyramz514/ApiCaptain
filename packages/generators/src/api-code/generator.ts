@@ -34,6 +34,10 @@ const mergeTypeFiles = (chunks: string[]): string => {
 };
 
 export const generateApiCode = (request: GenerateApiCodeRequest): GenerateApiCodeData => {
+  if (!request.library) {
+    throw new Error('library is required for React Native generation');
+  }
+
   if (request.framework !== 'react-native') {
     throw new Error(`Unsupported framework: ${request.framework}`);
   }
@@ -112,6 +116,7 @@ export const generateApiCode = (request: GenerateApiCodeRequest): GenerateApiCod
       endpoint: clientContext.endpoint,
       framework: request.framework,
       library: request.library,
+      rootName: request.rootName?.trim() || baseName,
     },
   };
 };

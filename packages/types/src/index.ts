@@ -25,12 +25,26 @@ export interface GenerateTypeScriptData {
 
 export type GenerateTypeScriptResponse = ApiSuccessResponse<GenerateTypeScriptData>;
 
-/** Phase 2 — React Native API code generation */
+/** HTTP + multi-language API generation */
 export type HttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
 
-export type ApiFramework = 'react-native';
+/** Phase 2 + Phase 3 frameworks */
+export type ApiFramework =
+  | 'react-native'
+  | 'flutter'
+  | 'swiftui'
+  | 'android'
+  | 'python';
 
+/** HTTP client libraries (React Native Phase 2) */
 export type HttpLibrary = 'axios' | 'fetch';
+
+export type GeneratedLanguage =
+  | 'typescript'
+  | 'dart'
+  | 'swift'
+  | 'kotlin'
+  | 'python';
 
 export interface GenerateApiCodeRequest {
   method: HttpMethod;
@@ -38,13 +52,15 @@ export interface GenerateApiCodeRequest {
   requestJson?: unknown | null;
   responseJson: unknown;
   framework: ApiFramework;
-  library: HttpLibrary;
+  /** Required for react-native; ignored for other frameworks */
+  library?: HttpLibrary;
+  rootName?: string;
 }
 
 export interface GeneratedFile {
   filename: string;
   content: string;
-  language: 'typescript';
+  language: GeneratedLanguage;
 }
 
 export interface GenerateApiCodeData {
@@ -57,7 +73,8 @@ export interface GenerateApiCodeData {
     method: HttpMethod;
     endpoint: string;
     framework: ApiFramework;
-    library: HttpLibrary;
+    library: HttpLibrary | null;
+    rootName: string;
   };
 }
 

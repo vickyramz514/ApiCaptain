@@ -1,2 +1,16 @@
 export * from './typescript/index.js';
-export * from './api-code/index.js';
+export {
+  generateApiCode,
+  getHttpClientGenerator,
+  axiosClientGenerator,
+  fetchClientGenerator,
+  deriveRequestTypeName,
+  deriveResponseTypeName,
+} from './api-code/index.js';
+export type { ApiClientContext, HttpClientGenerator } from './api-code/index.js';
+export * from './shared/index.js';
+export * from './dart/index.js';
+export * from './swift/index.js';
+export * from './kotlin/index.js';
+export * from './python/index.js';
+export { generateApiCodeForFramework, buildNormalizedInput, LANGUAGE_GENERATORS } from './registry.js';

@@ -194,3 +194,35 @@ test('POST /api/v1/generate/api-code requires requestJson for POST', async () =>
     assert.equal(body.error.code, 'MISSING_REQUEST_BODY');
   });
 });
+
+
+test('POST /api/v1/generate/api-code flutter dart flow', async () => {
+  const app = createApp();
+  await withServer(app, async (baseUrl) => {
+    const response = await fetch(`${baseUrl}/api/v1/generate/api-code`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        method: 'POST',
+        endpoint: '/api/login',
+        framework: 'flutter',
+        rootName: 'Login',
+        requestJson: { email: 'john@test.com', password: '123456' },
+        responseJson: {
+          token: 'abc123',
+          user: { id: 1, name: 'John', email: 'john@test.com' },
+        },
+      }),
+    });
+
+    const body = (await response.json()) as {
+      success: boolean;
+      data: { files: Array<{ filename: string; content: string; language: string }> };
+    };
+
+    assert.equal(response.status, 200);
+    assert.equal(body.success, true);
+    assert.equal(body.data.files[0]?.language, 'dart');
+    assert.match(body.data.files[0]!.content, /class LoginResponse/);
+  });
+});

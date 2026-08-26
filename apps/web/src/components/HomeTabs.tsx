@@ -14,12 +14,12 @@ export function HomeTabs() {
       <div className="mx-auto max-w-7xl px-4 pt-8 sm:px-6 lg:px-8">
         <h1 className="text-3xl font-semibold tracking-tight text-white sm:text-4xl">
           {tab === 'api-code'
-            ? 'React Native API Code Generator'
+            ? 'Multi-Language API Code Generator'
             : 'JSON to TypeScript Converter'}
         </h1>
         <p className="mt-2 max-w-3xl text-sm leading-relaxed text-slate-400 sm:text-base">
           {tab === 'api-code'
-            ? 'Provide method, endpoint, request/response JSON, and generate reusable Axios or Fetch TypeScript files for React Native.'
+            ? 'Provide method, endpoint, request/response JSON, and generate production-ready models/API clients for React Native, Flutter, SwiftUI, Android, or Python.'
             : 'Paste an API JSON response and generate clean TypeScript interfaces or type aliases.'}
         </p>
 

@@ -7,7 +7,13 @@ import type {
 import { AppError } from '../utils/errors.js';
 
 const HTTP_METHODS = new Set<HttpMethod>(['GET', 'POST', 'PUT', 'PATCH', 'DELETE']);
-const FRAMEWORKS = new Set<ApiFramework>(['react-native']);
+const FRAMEWORKS = new Set<ApiFramework>([
+  'react-native',
+  'flutter',
+  'swiftui',
+  'android',
+  'python',
+]);
 const LIBRARIES = new Set<HttpLibrary>(['axios', 'fetch']);
 const METHODS_REQUIRING_BODY = new Set<HttpMethod>(['POST', 'PUT', 'PATCH']);
 
@@ -40,15 +46,34 @@ export const validateGenerateApiCodeRequest = (body: unknown): GenerateApiCodeRe
     typeof payload.framework !== 'string' ||
     !FRAMEWORKS.has(payload.framework as ApiFramework)
   ) {
-    throw new AppError('INVALID_FRAMEWORK', 'framework must be "react-native"');
+    throw new AppError(
+      'INVALID_FRAMEWORK',
+      'framework must be one of react-native, flutter, swiftui, android, python',
+    );
   }
 
-  if (typeof payload.library !== 'string' || !LIBRARIES.has(payload.library as HttpLibrary)) {
-    throw new AppError('INVALID_LIBRARY', 'library must be "axios" or "fetch"');
+  const framework = payload.framework as ApiFramework;
+
+  if (framework === 'react-native') {
+    if (typeof payload.library !== 'string' || !LIBRARIES.has(payload.library as HttpLibrary)) {
+      throw new AppError('INVALID_LIBRARY', 'library must be "axios" or "fetch" for react-native');
+    }
+  } else if (payload.library !== undefined && payload.library !== null) {
+    if (typeof payload.library !== 'string' || !LIBRARIES.has(payload.library as HttpLibrary)) {
+      throw new AppError('INVALID_LIBRARY', 'library must be "axios" or "fetch" when provided');
+    }
+  }
+
+  if (payload.rootName !== undefined && typeof payload.rootName !== 'string') {
+    throw new AppError('INVALID_OPTIONS', 'rootName must be a string');
   }
 
   if (METHODS_REQUIRING_BODY.has(method)) {
-    if (!('requestJson' in payload) || payload.requestJson === undefined || payload.requestJson === null) {
+    if (
+      !('requestJson' in payload) ||
+      payload.requestJson === undefined ||
+      payload.requestJson === null
+    ) {
       throw new AppError(
         'MISSING_REQUEST_BODY',
         `requestJson is required for ${method} requests`,
@@ -61,7 +86,8 @@ export const validateGenerateApiCodeRequest = (body: unknown): GenerateApiCodeRe
     endpoint: payload.endpoint.trim(),
     requestJson: payload.requestJson ?? null,
     responseJson: payload.responseJson,
-    framework: payload.framework as ApiFramework,
-    library: payload.library as HttpLibrary,
+    framework,
+    library: typeof payload.library === 'string' ? (payload.library as HttpLibrary) : undefined,
+    rootName: typeof payload.rootName === 'string' ? payload.rootName : undefined,
   };
 };
