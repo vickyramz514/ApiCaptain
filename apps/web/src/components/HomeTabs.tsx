@@ -20,7 +20,10 @@ export function HomeTabs() {
         <p className="mt-2 max-w-3xl text-sm leading-relaxed text-slate-400 sm:text-base">
           {tab === 'api-code'
             ? 'Provide method, endpoint, request/response JSON, and generate production-ready models/API clients for React Native, Flutter, SwiftUI, Android, or Python.'
-            : 'Paste an API JSON response and generate clean TypeScript interfaces or type aliases.'}
+            : 'Paste an API JSON response and generate clean TypeScript interfaces or type aliases.'}{' '}
+          <a href="/openapi-generator" className="text-teal-400 hover:underline">
+            Prefer OpenAPI/Swagger?
+          </a>
         </p>
 
         <div className="mt-6 flex flex-wrap gap-2" role="tablist" aria-label="Generator mode">

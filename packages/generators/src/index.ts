@@ -14,3 +14,12 @@ export * from './swift/index.js';
 export * from './kotlin/index.js';
 export * from './python/index.js';
 export { generateApiCodeForFramework, buildNormalizedInput, LANGUAGE_GENERATORS } from './registry.js';
+export {
+  generateFromOpenApi,
+  schemaToModelSet,
+  collectEndpointModels,
+  groupEndpointsByTag,
+  selectEndpoints,
+  sanitizeFileSegment,
+} from './openapi/index.js';
+export type { GenerateFromOpenApiInput } from './openapi/index.js';

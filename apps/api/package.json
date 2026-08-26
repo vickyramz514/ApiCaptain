@@ -22,6 +22,7 @@
   "dependencies": {
     "@apicaptain/config": "workspace:*",
     "@apicaptain/generators": "workspace:*",
+    "@apicaptain/openapi": "workspace:*",
     "@apicaptain/types": "workspace:*",
     "@prisma/client": "^6.8.2",
     "cors": "^2.8.5",

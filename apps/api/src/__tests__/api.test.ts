@@ -226,3 +226,72 @@ test('POST /api/v1/generate/api-code flutter dart flow', async () => {
     assert.match(body.data.files[0]!.content, /class LoginResponse/);
   });
 });
+
+
+test('POST /api/v1/openapi/parse example yaml', async () => {
+  const app = createApp();
+  const yaml = `openapi: 3.0.3
+info:
+  title: Demo
+  version: 1.0.0
+paths:
+  /ping:
+    get:
+      operationId: ping
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean }
+`;
+  await withServer(app, async (baseUrl) => {
+    const response = await fetch(`${baseUrl}/api/v1/openapi/parse`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ content: yaml, format: 'yaml' }),
+    });
+    const body = (await response.json()) as {
+      success: boolean;
+      data: { title: string; endpointCount: number; specification: unknown };
+    };
+    assert.equal(response.status, 200);
+    assert.equal(body.data.title, 'Demo');
+    assert.equal(body.data.endpointCount, 1);
+
+    const generate = await fetch(`${baseUrl}/api/v1/openapi/generate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        specification: body.data.specification,
+        endpointIds: 'all',
+        framework: 'react-native',
+        library: 'axios',
+      }),
+    });
+    const generated = (await generate.json()) as {
+      success: boolean;
+      data: { files: Array<{ filename: string; content: string }> };
+    };
+    assert.equal(generate.status, 200);
+    assert.ok(generated.data.files.length >= 2);
+    assert.ok(generated.data.files.some((file) => file.filename.includes('client.ts')));
+  });
+});
+
+test('POST /api/v1/openapi/import-url blocks localhost', async () => {
+  const app = createApp();
+  await withServer(app, async (baseUrl) => {
+    const response = await fetch(`${baseUrl}/api/v1/openapi/import-url`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url: 'http://127.0.0.1:4000/openapi.yaml' }),
+    });
+    const body = (await response.json()) as { success: boolean; error: { code: string } };
+    assert.equal(response.status, 400);
+    assert.equal(body.error.code, 'SSRF_BLOCKED');
+  });
+});

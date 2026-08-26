@@ -1,8 +1,8 @@
 {
-  "name": "@apicaptain/generators",
+  "name": "@apicaptain/openapi",
   "version": "0.0.0",
   "private": true,
-  "description": "JSON schema and code generation utilities for ApiCaptain",
+  "description": "OpenAPI/Swagger parser, resolver, and normalizer for ApiCaptain",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -21,14 +21,15 @@
     "dev": "tsc -p tsconfig.json --watch",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "lint": "tsc -p tsconfig.json --noEmit",
-    "test": "node --import tsx --test src/typescript/generator.test.ts src/api-code/generator.test.ts src/phase3.test.ts src/openapi/openapi.generate.test.ts",
+    "test": "node --import tsx --test src/__tests__/*.test.ts",
     "clean": "rm -rf dist .turbo *.tsbuildinfo"
   },
   "dependencies": {
-    "@apicaptain/openapi": "workspace:*",
-    "@apicaptain/types": "workspace:*"
+    "@apicaptain/types": "workspace:*",
+    "yaml": "^2.7.1"
   },
   "devDependencies": {
+    "@types/node": "^22.15.21",
     "tsx": "^4.19.4",
     "typescript": "^5.8.3"
   }

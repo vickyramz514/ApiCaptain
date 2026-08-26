@@ -5,6 +5,11 @@ import type {
   GenerateApiCodeRequest,
   GenerateTypeScriptData,
   GenerateTypeScriptRequest,
+  OpenApiGenerateData,
+  OpenApiGenerateRequest,
+  OpenApiParseData,
+  OpenApiParseRequest,
+  OpenApiImportUrlRequest,
 } from '@apicaptain/types';
 
 const apiBaseUrl = () =>
@@ -64,6 +69,37 @@ export const generateApiCode = async (
   return parseApiResponse<GenerateApiCodeData>(response);
 };
 
+export const parseOpenApi = async (request: OpenApiParseRequest): Promise<OpenApiParseData> => {
+  const response = await fetch(`${apiBaseUrl()}/api/v1/openapi/parse`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(request),
+  });
+  return parseApiResponse<OpenApiParseData>(response);
+};
+
+export const importOpenApiUrl = async (
+  request: OpenApiImportUrlRequest,
+): Promise<OpenApiParseData> => {
+  const response = await fetch(`${apiBaseUrl()}/api/v1/openapi/import-url`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(request),
+  });
+  return parseApiResponse<OpenApiParseData>(response);
+};
+
+export const generateOpenApiClient = async (
+  request: OpenApiGenerateRequest,
+): Promise<OpenApiGenerateData> => {
+  const response = await fetch(`${apiBaseUrl()}/api/v1/openapi/generate`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(request),
+  });
+  return parseApiResponse<OpenApiGenerateData>(response);
+};
+
 export const EXAMPLE_JSON = `{
   "id": 123,
   "name": "John",
@@ -89,3 +125,73 @@ export const EXAMPLE_API_RESPONSE = `{
     "email": "john@test.com"
   }
 }`;
+
+export const EXAMPLE_OPENAPI_YAML = `openapi: 3.0.3
+info:
+  title: Example Shop API
+  version: 1.0.0
+servers:
+  - url: https://api.example.com/v1
+paths:
+  /auth/login:
+    post:
+      tags: [Auth]
+      operationId: login
+      summary: Login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email: { type: string }
+                password: { type: string }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token: { type: string }
+  /users:
+    get:
+      tags: [Users]
+      operationId: getUsers
+      summary: List users
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id: { type: integer }
+                    name: { type: string }
+  /users/{id}:
+    get:
+      tags: [Users]
+      operationId: getUserById
+      summary: Get user
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id: { type: integer }
+                  name: { type: string }
+`;

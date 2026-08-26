@@ -35,7 +35,7 @@ export const getApiConfig = (env?: EnvMap): ApiConfig => {
     corsOrigin: source.CORS_ORIGIN ?? 'http://localhost:3000',
     nodeEnv: source.NODE_ENV ?? 'development',
     databaseUrl: source.DATABASE_URL ?? '',
-    bodyLimit: source.BODY_LIMIT ?? '1mb',
+    bodyLimit: source.BODY_LIMIT ?? '2mb',
     rateLimitWindowMs: toNumber(source.RATE_LIMIT_WINDOW_MS, 60_000),
     rateLimitMax: toNumber(source.RATE_LIMIT_MAX, 60),
   };

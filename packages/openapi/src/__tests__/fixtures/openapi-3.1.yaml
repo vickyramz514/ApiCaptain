@@ -1,0 +1,31 @@
+openapi: "3.1.0"
+info:
+  title: OpenAPI 31 Demo
+  version: "3.1.0"
+servers:
+  - url: https://api31.example.com
+paths:
+  /items:
+    get:
+      operationId: listItems
+      tags: [Items]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  name:
+                    type: ["string", "null"]
+                  count:
+                    type: integer
+components:
+  schemas:
+    Item:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid

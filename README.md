@@ -2,7 +2,11 @@
 
 **Turn APIs into production-ready code.**
 
-ApiCaptain generates production-ready API models and clients for React Native, Flutter (Dart), SwiftUI (Swift), Android (Kotlin), and Python — and still supports JSON → TypeScript interfaces.
+ApiCaptain generates production-ready API models and clients from:
+
+1. JSON samples → TypeScript (Phase 1)
+2. Method + endpoint + JSON → multi-language clients (Phases 2–3)
+3. **OpenAPI / Swagger → structured multi-file API clients (Phase 4)**
 
 ## Monorepo architecture
 
@@ -14,8 +18,9 @@ ApiCaptain/
 ├── packages/
 │   ├── types/               # Shared request/response contracts
 │   ├── config/              # Shared env/config helpers
-│   └── generators/          # JSON → TypeScript generator
-├── docs/phase-1.md
+│   ├── openapi/             # OpenAPI/Swagger parse + normalize
+│   └── generators/          # Language generators (framework-independent)
+├── docs/
 ├── package.json
 ├── pnpm-workspace.yaml
 └── turbo.json
@@ -24,102 +29,34 @@ ApiCaptain/
 Dependency direction:
 
 - `apps/web` → `@apicaptain/types`
-- `apps/api` → `@apicaptain/types` + `@apicaptain/generators`
-- `@apicaptain/generators` has **no** dependency on Next.js, Express, React, or the database
-
-## Tech stack
-
-- pnpm workspaces + Turborepo
-- TypeScript everywhere
-- Next.js + Tailwind CSS + Monaco Editor
-- Node.js + Express
-- PostgreSQL + Prisma
-- Node.js native test runner
+- `apps/api` → `@apicaptain/types` + `@apicaptain/generators` + `@apicaptain/openapi`
+- `@apicaptain/generators` → `@apicaptain/types` + `@apicaptain/openapi`
+- Generators have **no** dependency on Next.js, Express, React, or the database
 
 ## Local setup
 
 ```bash
 pnpm install
 cp .env.example .env
-```
-
-### Database
-
-1. Start PostgreSQL locally.
-2. Set `DATABASE_URL` in `.env`.
-3. Apply migrations and generate the Prisma client:
-
-```bash
 pnpm db:generate
-pnpm db:migrate
-```
-
-Phase 1 generation does **not** require writing to the database. Prisma is ready for future auth/projects/history.
-
-### Development
-
-```bash
+pnpm db:migrate   # when PostgreSQL is available
 pnpm dev
 ```
 
 - Web: http://localhost:3000
+- OpenAPI UI: http://localhost:3000/openapi-generator
 - API: http://localhost:4000
-
-## Environment variables
-
-See `.env.example`:
-
-| Variable | Description |
-|----------|-------------|
-| `DATABASE_URL` | PostgreSQL connection string |
-| `API_PORT` | API port (default `4000`) |
-| `CORS_ORIGIN` | Allowed browser origin |
-| `NEXT_PUBLIC_API_URL` | Browser-facing API base URL |
-| `NEXT_PUBLIC_SITE_URL` | Canonical site URL for SEO |
 
 ## API
 
-### Health
-
-`GET /health`
-
-### Generate TypeScript (Phase 1)
-
-`POST /api/v1/generate/typescript`
-
-### Generate API code (Phase 2)
-
-`POST /api/v1/generate/api-code`
-
-```bash
-curl -s http://localhost:4000/api/v1/generate/api-code \
-  -H 'content-type: application/json' \
-  -d '{
-    "method":"POST",
-    "endpoint":"/api/login",
-    "framework":"react-native",
-    "library":"axios",
-    "requestJson":{"email":"john@test.com","password":"123456"},
-    "responseJson":{"token":"abc123","user":{"id":1,"name":"John","email":"john@test.com"}}
-  }'
-```
-
-### Generate TypeScript
-
-`POST /api/v1/generate/typescript`
-
-```bash
-curl -s http://localhost:4000/api/v1/generate/typescript \
-  -H 'content-type: application/json' \
-  -d '{
-    "json": {"id":1,"name":"John","profile":{"city":"Chennai"},"tags":["react","react-native"]},
-    "rootName":"User",
-    "outputType":"interface",
-    "optionalProperties":false,
-    "exportTypes":true,
-    "useSemicolon":true
-  }'
-```
+| Endpoint | Phase |
+|----------|-------|
+| `GET /health` | — |
+| `POST /api/v1/generate/typescript` | 1 |
+| `POST /api/v1/generate/api-code` | 2–3 |
+| `POST /api/v1/openapi/parse` | 4 |
+| `POST /api/v1/openapi/import-url` | 4 |
+| `POST /api/v1/openapi/generate` | 4 |
 
 ## Scripts
 
@@ -130,11 +67,11 @@ curl -s http://localhost:4000/api/v1/generate/typescript \
 | `pnpm typecheck` | TypeScript checks |
 | `pnpm lint` | Lint (tsc-based) |
 | `pnpm test` | Unit + API tests |
-| `pnpm db:generate` | Prisma client generate |
 | `pnpm db:migrate` | Apply migrations |
 
 ## Documentation
 
-- [Phase 1 details](./docs/phase-1.md)
-- [Phase 2 details](./docs/phase-2.md)
-- [Phase 3 details](./docs/phase-3.md)
+- [Phase 1](./docs/phase-1.md) — JSON → TypeScript
+- [Phase 2](./docs/phase-2.md) — React Native Axios/Fetch
+- [Phase 3](./docs/phase-3.md) — Dart / Swift / Kotlin / Python
+- [Phase 4](./docs/phase-4.md) — OpenAPI / Swagger → clients

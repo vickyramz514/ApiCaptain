@@ -7,7 +7,7 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-/// Future auth-ready user account (Phase 1: unused by generation flow)
+/// Future auth-ready user account (unused by generation flow)
 model User {
   id        String   @id @default(cuid())
   email     String   @unique
@@ -38,15 +38,23 @@ model Project {
   @@map("projects")
 }
 
-/// Optional persisted generation history (Phase 1 does not auto-save anonymous runs)
+/// Optional persisted generation history (not auto-saved for anonymous runs)
 model Generation {
   id            String   @id @default(cuid())
   projectId     String?
   userId        String?
+  /// json | api | openapi
+  sourceType    String   @default("json")
+  sourceName    String?
+  specVersion   String?
+  framework     String?
+  library       String?
+  endpointCount Int?
   inputJson     Json
   rootName      String
   outputType    String
   generatedCode String
+  metadata      Json?
   createdAt     DateTime @default(now())
 
   project Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
@@ -55,5 +63,6 @@ model Generation {
   @@index([userId])
   @@index([projectId])
   @@index([createdAt])
+  @@index([sourceType])
   @@map("generations")
 }

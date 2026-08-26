@@ -134,3 +134,84 @@ export interface HealthResponse {
   timestamp: string;
   version: string;
 }
+
+/** Phase 4 — OpenAPI / Swagger generation */
+export type GenerationSourceType = 'json' | 'api' | 'openapi';
+
+export type OpenApiLibrary =
+  | 'axios'
+  | 'fetch'
+  | 'dio'
+  | 'urlsession'
+  | 'retrofit'
+  | 'httpx';
+
+export interface OpenApiParseRequest {
+  content: string;
+  format?: 'json' | 'yaml' | 'auto';
+}
+
+export interface OpenApiEndpointSummary {
+  id: string;
+  operationId: string;
+  method: string;
+  path: string;
+  summary?: string;
+  description?: string;
+  tags: string[];
+  parameters: Array<{
+    name: string;
+    in: string;
+    required: boolean;
+    description?: string;
+  }>;
+  hasRequestBody: boolean;
+  successStatus?: string;
+}
+
+export interface OpenApiParseData {
+  title: string;
+  version: string;
+  description?: string;
+  baseUrl: string;
+  servers: string[];
+  openapiVersion: string;
+  documentFormat: 'json' | 'yaml';
+  authentication: Array<{
+    name: string;
+    type: string;
+    scheme?: string;
+  }>;
+  tags: string[];
+  endpointCount: number;
+  endpoints: OpenApiEndpointSummary[];
+  /** Full normalized specification for generate (opaque to UI beyond explorer needs) */
+  specification: unknown;
+}
+
+export type OpenApiParseResponse = ApiSuccessResponse<OpenApiParseData>;
+
+export interface OpenApiImportUrlRequest {
+  url: string;
+}
+
+export interface OpenApiGenerateRequest {
+  specification: unknown;
+  endpointIds?: string[] | 'all';
+  framework: ApiFramework;
+  library?: OpenApiLibrary | HttpLibrary;
+  baseUrlOverride?: string;
+}
+
+export interface OpenApiGenerateData {
+  files: GeneratedFile[];
+  meta: {
+    framework: ApiFramework;
+    library: OpenApiLibrary | HttpLibrary | null;
+    endpointCount: number;
+    title: string;
+    baseUrl: string;
+  };
+}
+
+export type OpenApiGenerateResponse = ApiSuccessResponse<OpenApiGenerateData>;
