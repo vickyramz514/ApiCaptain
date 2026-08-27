@@ -1,4 +1,4 @@
-import type { NextFunction, Request, Response } from 'express';
+import type { NextFunction, Response } from 'express';
 import {
   generateOpenApiService,
   importOpenApiUrlService,
@@ -10,8 +10,10 @@ import {
   validateOpenApiParseRequest,
 } from '../validators/openapi.js';
 import { sendSuccess } from '../utils/response.js';
+import type { AuthedRequest } from '../middleware/auth.js';
+import { assertCanGenerate, recordSuccessfulGeneration } from '../services/usageService.js';
 
-export const parseOpenApiController = (req: Request, res: Response, next: NextFunction): void => {
+export const parseOpenApiController = (req: AuthedRequest, res: Response, next: NextFunction): void => {
   try {
     const request = validateOpenApiParseRequest(req.body);
     const data = parseOpenApiService(request);
@@ -22,7 +24,7 @@ export const parseOpenApiController = (req: Request, res: Response, next: NextFu
 };
 
 export const importOpenApiUrlController = (
-  req: Request,
+  req: AuthedRequest,
   res: Response,
   next: NextFunction,
 ): void => {
@@ -37,14 +39,20 @@ export const importOpenApiUrlController = (
   })();
 };
 
-export const generateOpenApiController = (
-  req: Request,
+export const generateOpenApiController = async (
+  req: AuthedRequest,
   res: Response,
   next: NextFunction,
-): void => {
+): Promise<void> => {
   try {
+    if (req.user) {
+      await assertCanGenerate(req.user.id, req.user.plan);
+    }
     const request = validateOpenApiGenerateRequest(req.body);
     const data = generateOpenApiService(request);
+    if (req.user) {
+      await recordSuccessfulGeneration(req.user.id);
+    }
     sendSuccess(res, data);
   } catch (error) {
     next(error);

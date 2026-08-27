@@ -6,18 +6,19 @@
   "type": "module",
   "main": "./dist/index.js",
   "scripts": {
-    "dev": "tsx watch src/index.ts",
-    "build": "prisma generate && tsc -p tsconfig.json",
+    "dev": "node ../../scripts/with-root-env.mjs tsx watch src/index.ts",
+    "build": "node ../../scripts/with-root-env.mjs prisma generate && tsc -p tsconfig.json",
     "start": "node dist/index.js",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "lint": "tsc -p tsconfig.json --noEmit",
-    "test": "node --import tsx --test src/__tests__/api.test.ts",
+    "test": "SAAS_STORE=memory NODE_ENV=test node --import tsx --test src/__tests__/api.test.ts src/__tests__/saas.test.ts",
     "clean": "rm -rf dist .turbo *.tsbuildinfo",
-    "db:generate": "prisma generate",
-    "db:migrate": "prisma migrate deploy",
-    "db:migrate:dev": "prisma migrate dev",
-    "db:studio": "prisma studio",
-    "db:seed": "tsx prisma/seed.ts"
+    "db:generate": "node ../../scripts/with-root-env.mjs prisma generate",
+    "db:migrate": "node ../../scripts/with-root-env.mjs prisma migrate deploy",
+    "db:migrate:dev": "node ../../scripts/with-root-env.mjs prisma migrate dev",
+    "db:studio": "node ../../scripts/with-root-env.mjs prisma studio",
+    "db:seed": "node ../../scripts/with-root-env.mjs tsx prisma/seed.ts",
+    "db:url-info": "node ../../scripts/db-url-info.mjs"
   },
   "dependencies": {
     "@apicaptain/config": "workspace:*",
@@ -25,11 +26,15 @@
     "@apicaptain/openapi": "workspace:*",
     "@apicaptain/types": "workspace:*",
     "@prisma/client": "^6.8.2",
+    "bcryptjs": "^3.0.3",
+    "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
     "express": "^5.1.0",
     "express-rate-limit": "^7.5.0"
   },
   "devDependencies": {
+    "@types/bcryptjs": "^3.0.0",
+    "@types/cookie-parser": "^1.4.10",
     "@types/cors": "^2.8.18",
     "@types/express": "^5.0.2",
     "@types/node": "^22.15.21",

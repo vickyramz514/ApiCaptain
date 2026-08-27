@@ -1,4 +1,5 @@
 import cors from 'cors';
+import cookieParser from 'cookie-parser';
 import express, { type Express } from 'express';
 import { getApiConfig } from '@apicaptain/config';
 import { apiRouter } from './routes/index.js';
@@ -10,14 +11,17 @@ export const createApp = (): Express => {
   const app = express();
 
   app.disable('x-powered-by');
+  app.set('trust proxy', 1);
   app.use(requestLogger);
   app.use(
     cors({
       origin: config.corsOrigin,
-      methods: ['GET', 'POST', 'OPTIONS'],
+      methods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
       allowedHeaders: ['Content-Type', 'Authorization'],
+      credentials: true,
     }),
   );
+  app.use(cookieParser());
   app.use(express.json({ limit: config.bodyLimit }));
 
   app.use(apiRouter);

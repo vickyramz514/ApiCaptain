@@ -7,55 +7,131 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-/// Future auth-ready user account (unused by generation flow)
-model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  name      String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+enum UserPlan {
+  FREE
+  PRO
+}
 
-  projects    Project[]
-  generations Generation[]
+enum SubscriptionStatus {
+  ACTIVE
+  CANCELLED
+  PAST_DUE
+  TRIALING
+  INACTIVE
+}
+
+enum SubscriptionProvider {
+  NONE
+  RAZORPAY
+  STRIPE
+}
+
+enum GenerationStatus {
+  SUCCESS
+  FAILED
+}
+
+/// Authenticated ApiCaptain account
+model User {
+  id           String    @id @default(cuid())
+  email        String    @unique
+  name         String?
+  passwordHash String
+  plan         UserPlan  @default(FREE)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  lastLoginAt  DateTime?
+
+  projects         Project[]
+  generations      Generation[]
+  sessions         Session[]
+  passwordResets   PasswordResetToken[]
+  usageRecords     UsageRecord[]
+  subscriptions    Subscription[]
 
   @@index([email])
   @@map("users")
 }
 
-/// Saved workspace/project for future SaaS features
+model Session {
+  id        String   @id @default(cuid())
+  userId    String
+  tokenHash String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  userAgent String?
+  ipAddress String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("sessions")
+}
+
+model PasswordResetToken {
+  id        String    @id @default(cuid())
+  userId    String
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("password_reset_tokens")
+}
+
+/// Saved workspace/project owned by a single user
 model Project {
-  id          String   @id @default(cuid())
-  userId      String
-  name        String
-  description String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id              String    @id @default(cuid())
+  userId          String
+  name            String
+  description     String?
+  /// JSON | API | OPENAPI
+  sourceType      String
+  sourceContent   String?   @db.Text
+  /// Extra structured source (method/endpoint/json samples, selected endpoints, etc.)
+  sourceMeta      Json?
+  openApiVersion  String?
+  framework       String?
+  library         String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  lastGeneratedAt DateTime?
 
   user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   generations Generation[]
 
   @@index([userId])
+  @@index([updatedAt])
   @@map("projects")
 }
 
-/// Optional persisted generation history (not auto-saved for anonymous runs)
+/// Generation history (full generated code is not persisted by default)
 model Generation {
-  id            String   @id @default(cuid())
+  id            String           @id @default(cuid())
   projectId     String?
   userId        String?
-  /// json | api | openapi
-  sourceType    String   @default("json")
+  /// json | api | openapi (legacy) or JSON | API | OPENAPI
+  sourceType    String           @default("json")
   sourceName    String?
   specVersion   String?
   framework     String?
+  language      String?
   library       String?
   endpointCount Int?
-  inputJson     Json
-  rootName      String
-  outputType    String
-  generatedCode String
+  status        GenerationStatus @default(SUCCESS)
+  durationMs    Int?
+  inputJson     Json             @default("{}")
+  rootName      String           @default("")
+  outputType    String           @default("")
+  /// Kept for compatibility; prefer regenerating from project source
+  generatedCode String           @default("")
   metadata      Json?
-  createdAt     DateTime @default(now())
+  createdAt     DateTime         @default(now())
 
   project Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
   user    User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
@@ -64,5 +140,44 @@ model Generation {
   @@index([projectId])
   @@index([createdAt])
   @@index([sourceType])
+  @@index([status])
   @@map("generations")
+}
+
+/// Monthly usage counters per user
+model UsageRecord {
+  id              String   @id @default(cuid())
+  userId          String
+  /// YYYY-MM
+  period          String
+  generationCount Int      @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, period])
+  @@index([userId])
+  @@map("usage_records")
+}
+
+/// Payment-provider-ready subscription row (no live billing in Phase 5)
+model Subscription {
+  id                     String               @id @default(cuid())
+  userId                 String
+  plan                   UserPlan             @default(FREE)
+  status                 SubscriptionStatus   @default(INACTIVE)
+  provider               SubscriptionProvider @default(NONE)
+  providerCustomerId     String?
+  providerSubscriptionId String?
+  currentPeriodStart     DateTime?
+  currentPeriodEnd       DateTime?
+  createdAt              DateTime             @default(now())
+  updatedAt              DateTime             @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([status])
+  @@map("subscriptions")
 }

@@ -5,6 +5,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
   const paths = [
     '/',
     '/openapi-generator',
+    '/pricing',
+    '/login',
+    '/register',
+    '/dashboard',
+    '/projects',
+    '/settings',
     '/swagger-to-typescript',
     '/openapi-to-typescript',
     '/openapi-to-react-native',

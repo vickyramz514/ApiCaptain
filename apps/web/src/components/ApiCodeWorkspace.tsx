@@ -1,15 +1,19 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import type { ApiFramework, GeneratedFile, GeneratedLanguage, HttpLibrary, HttpMethod } from '@apicaptain/types';
 import {
   ApiClientError,
   EXAMPLE_API_REQUEST,
   EXAMPLE_API_RESPONSE,
+  createProject,
   generateApiCode,
+  setSaveDraft,
 } from '../lib/apiClient';
 import { validateJsonText } from '../lib/jsonValidation';
 import { CodeEditor } from './CodeEditor';
+import { useAuth } from './AuthProvider';
 
 const METHODS: HttpMethod[] = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'];
 const BODY_METHODS = new Set<HttpMethod>(['POST', 'PUT', 'PATCH']);
@@ -40,6 +44,8 @@ const editorLanguageFor = (language: GeneratedLanguage) => {
 };
 
 export function ApiCodeWorkspace() {
+  const { user } = useAuth();
+  const router = useRouter();
   const [method, setMethod] = useState<HttpMethod>('POST');
   const [endpoint, setEndpoint] = useState('/api/login');
   const [requestText, setRequestText] = useState(EXAMPLE_API_REQUEST);
@@ -136,6 +142,35 @@ export function ApiCodeWorkspace() {
       anchor.download = file.filename;
       anchor.click();
       URL.revokeObjectURL(url);
+    }
+  };
+
+  const saveAsProject = async () => {
+    const draft = {
+      name: `${method} ${endpoint}`,
+      sourceType: 'API' as const,
+      framework,
+      library: framework === 'react-native' ? library : undefined,
+      sourceMeta: {
+        method,
+        endpoint: endpoint.trim(),
+        requestJson: needsBody && requestValidation.valid ? requestValidation.value : null,
+        responseJson: responseValidation.valid ? responseValidation.value : null,
+        framework,
+        library: framework === 'react-native' ? library : undefined,
+      },
+    };
+    if (!user) {
+      setSaveDraft(draft);
+      router.push('/register?next=/projects');
+      return;
+    }
+    try {
+      const project = await createProject(draft);
+      router.push(`/projects/${project.id}`);
+    } catch (error) {
+      setErrorMessage(error instanceof ApiClientError ? error.message : 'Could not save project');
+      setStatus('error');
     }
   };
 
@@ -247,6 +282,13 @@ export function ApiCodeWorkspace() {
           className="rounded-lg bg-teal-500 px-4 py-2 text-sm font-semibold text-slate-950 hover:bg-teal-400 disabled:opacity-50"
         >
           {status === 'loading' ? 'Generating…' : 'Generate API Code'}
+        </button>
+        <button
+          type="button"
+          onClick={() => void saveAsProject()}
+          className="rounded-lg border border-slate-600 px-3 py-2 text-sm text-slate-200 hover:border-teal-400"
+        >
+          {user ? 'Save Project' : 'Save (create free account)'}
         </button>
         {files.length > 0 ? (
           <>

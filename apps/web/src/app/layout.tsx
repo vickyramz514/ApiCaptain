@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
+import { Providers } from '../components/Providers';
 import './globals.css';
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000';
@@ -7,16 +8,15 @@ const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000';
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: {
-    default: 'React Native API Code Generator | ApiCaptain',
+    default: 'ApiCaptain — Turn APIs into production-ready code',
     template: '%s | ApiCaptain',
   },
   description:
-    'Generate production-ready React Native TypeScript API clients from request/response JSON. Also convert JSON to TypeScript interfaces.',
+    'Generate production-ready API clients from JSON, endpoints, and OpenAPI. Save projects, track usage, and scale with Pro.',
   applicationName: 'ApiCaptain',
   keywords: [
+    'OpenAPI generator',
     'React Native API generator',
-    'Axios TypeScript',
-    'Fetch TypeScript',
     'JSON to TypeScript',
     'ApiCaptain',
   ],
@@ -24,16 +24,10 @@ export const metadata: Metadata = {
   openGraph: {
     type: 'website',
     url: siteUrl,
-    title: 'React Native API Code Generator | ApiCaptain',
+    title: 'ApiCaptain — Turn APIs into production-ready code',
     description:
-      'Generate production-ready React Native TypeScript API clients from request/response JSON.',
+      'Generate production-ready API clients from JSON, endpoints, and OpenAPI.',
     siteName: 'ApiCaptain',
-  },
-  twitter: {
-    card: 'summary_large_image',
-    title: 'React Native API Code Generator | ApiCaptain',
-    description:
-      'Generate production-ready React Native TypeScript API clients from request/response JSON.',
   },
   robots: {
     index: true,
@@ -44,7 +38,9 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
-      <body className="antialiased">{children}</body>
+      <body className="antialiased">
+        <Providers>{children}</Providers>
+      </body>
     </html>
   );
 }

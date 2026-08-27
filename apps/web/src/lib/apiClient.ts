@@ -1,16 +1,31 @@
 import type {
   ApiErrorResponse,
   ApiSuccessResponse,
+  AuthTokenData,
+  CreateProjectRequest,
+  DashboardData,
+  DeleteAccountRequest,
+  ForgotPasswordRequest,
   GenerateApiCodeData,
   GenerateApiCodeRequest,
   GenerateTypeScriptData,
   GenerateTypeScriptRequest,
+  LoginRequest,
+  MeData,
   OpenApiGenerateData,
   OpenApiGenerateRequest,
   OpenApiParseData,
   OpenApiParseRequest,
   OpenApiImportUrlRequest,
+  PricingData,
+  ProjectDetail,
+  RegisterRequest,
+  ResetPasswordRequest,
+  UpdateProjectRequest,
 } from '@apicaptain/types';
+
+const TOKEN_KEY = 'apicaptain_token';
+const DRAFT_KEY = 'apicaptain_save_draft';
 
 const apiBaseUrl = () =>
   (process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000').replace(/\/$/, '');
@@ -29,6 +44,41 @@ export class ApiClientError extends Error {
   }
 }
 
+export const getStoredToken = (): string | null => {
+  if (typeof window === 'undefined') return null;
+  return window.localStorage.getItem(TOKEN_KEY);
+};
+
+export const setStoredToken = (token: string | null): void => {
+  if (typeof window === 'undefined') return;
+  if (!token) window.localStorage.removeItem(TOKEN_KEY);
+  else window.localStorage.setItem(TOKEN_KEY, token);
+};
+
+export const setSaveDraft = (draft: unknown): void => {
+  if (typeof window === 'undefined') return;
+  window.localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
+};
+
+export const consumeSaveDraft = <T>(): T | null => {
+  if (typeof window === 'undefined') return null;
+  const raw = window.localStorage.getItem(DRAFT_KEY);
+  if (!raw) return null;
+  window.localStorage.removeItem(DRAFT_KEY);
+  try {
+    return JSON.parse(raw) as T;
+  } catch {
+    return null;
+  }
+};
+
+const authHeaders = (): HeadersInit => {
+  const token = getStoredToken();
+  return token
+    ? { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }
+    : { 'Content-Type': 'application/json' };
+};
+
 const parseApiResponse = async <T>(response: Response): Promise<T> => {
   const payload = (await response.json()) as ApiSuccessResponse<T> | ApiErrorResponse;
 
@@ -45,59 +95,109 @@ const parseApiResponse = async <T>(response: Response): Promise<T> => {
   return payload.data;
 };
 
+const post = async <T>(path: string, body?: unknown, auth = false): Promise<T> => {
+  const response = await fetch(`${apiBaseUrl()}${path}`, {
+    method: 'POST',
+    headers: auth ? authHeaders() : { 'Content-Type': 'application/json', ...authHeaders() },
+    body: body === undefined ? undefined : JSON.stringify(body),
+    credentials: 'include',
+  });
+  return parseApiResponse<T>(response);
+};
+
+const get = async <T>(path: string): Promise<T> => {
+  const response = await fetch(`${apiBaseUrl()}${path}`, {
+    headers: authHeaders(),
+    credentials: 'include',
+  });
+  return parseApiResponse<T>(response);
+};
+
 export const generateTypeScript = async (
   request: GenerateTypeScriptRequest,
-): Promise<GenerateTypeScriptData> => {
-  const response = await fetch(`${apiBaseUrl()}/api/v1/generate/typescript`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(request),
-  });
-
-  return parseApiResponse<GenerateTypeScriptData>(response);
-};
+): Promise<GenerateTypeScriptData> =>
+  post('/api/v1/generate/typescript', request, true);
 
 export const generateApiCode = async (
   request: GenerateApiCodeRequest,
-): Promise<GenerateApiCodeData> => {
-  const response = await fetch(`${apiBaseUrl()}/api/v1/generate/api-code`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(request),
-  });
+): Promise<GenerateApiCodeData> => post('/api/v1/generate/api-code', request, true);
 
-  return parseApiResponse<GenerateApiCodeData>(response);
-};
-
-export const parseOpenApi = async (request: OpenApiParseRequest): Promise<OpenApiParseData> => {
-  const response = await fetch(`${apiBaseUrl()}/api/v1/openapi/parse`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(request),
-  });
-  return parseApiResponse<OpenApiParseData>(response);
-};
+export const parseOpenApi = async (request: OpenApiParseRequest): Promise<OpenApiParseData> =>
+  post('/api/v1/openapi/parse', request);
 
 export const importOpenApiUrl = async (
   request: OpenApiImportUrlRequest,
-): Promise<OpenApiParseData> => {
-  const response = await fetch(`${apiBaseUrl()}/api/v1/openapi/import-url`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(request),
-  });
-  return parseApiResponse<OpenApiParseData>(response);
-};
+): Promise<OpenApiParseData> => post('/api/v1/openapi/import-url', request);
 
 export const generateOpenApiClient = async (
   request: OpenApiGenerateRequest,
-): Promise<OpenApiGenerateData> => {
-  const response = await fetch(`${apiBaseUrl()}/api/v1/openapi/generate`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+): Promise<OpenApiGenerateData> => post('/api/v1/openapi/generate', request, true);
+
+export const register = (request: RegisterRequest): Promise<AuthTokenData> =>
+  post('/api/v1/auth/register', request);
+
+export const login = (request: LoginRequest): Promise<AuthTokenData> =>
+  post('/api/v1/auth/login', request);
+
+export const logout = (): Promise<{ ok: true }> => post('/api/v1/auth/logout', {}, true);
+
+export const fetchMe = (): Promise<MeData> => get('/api/v1/auth/me');
+
+export const forgotPassword = (request: ForgotPasswordRequest): Promise<{ ok: true }> =>
+  post('/api/v1/auth/forgot-password', request);
+
+export const resetPassword = (request: ResetPasswordRequest): Promise<{ ok: true }> =>
+  post('/api/v1/auth/reset-password', request);
+
+export const fetchDashboard = (): Promise<DashboardData> => get('/api/v1/dashboard');
+
+export const fetchPricing = (): Promise<PricingData> => get('/api/v1/auth/pricing');
+
+export const listProjects = (): Promise<{ projects: import('@apicaptain/types').ProjectSummary[] }> =>
+  get('/api/v1/projects');
+
+export const getProject = (id: string): Promise<ProjectDetail> => get(`/api/v1/projects/${id}`);
+
+export const createProject = (request: CreateProjectRequest): Promise<ProjectDetail> =>
+  post('/api/v1/projects', request, true);
+
+export const updateProject = async (
+  id: string,
+  request: UpdateProjectRequest,
+): Promise<ProjectDetail> => {
+  const response = await fetch(`${apiBaseUrl()}/api/v1/projects/${id}`, {
+    method: 'PATCH',
+    headers: authHeaders(),
+    credentials: 'include',
     body: JSON.stringify(request),
   });
-  return parseApiResponse<OpenApiGenerateData>(response);
+  return parseApiResponse<ProjectDetail>(response);
+};
+
+export const deleteProject = async (id: string): Promise<{ ok: true }> => {
+  const response = await fetch(`${apiBaseUrl()}/api/v1/projects/${id}`, {
+    method: 'DELETE',
+    headers: authHeaders(),
+    credentials: 'include',
+  });
+  return parseApiResponse<{ ok: true }>(response);
+};
+
+export const fetchProjectHistory = (
+  id: string,
+): Promise<{ generations: Array<Record<string, unknown>> }> =>
+  get(`/api/v1/projects/${id}/history`);
+
+export const generateProject = (id: string): Promise<{ files: unknown; meta: unknown }> =>
+  post(`/api/v1/projects/${id}/generate`, {}, true);
+
+export const deleteAccount = (request: DeleteAccountRequest): Promise<{ ok: true }> => {
+  return fetch(`${apiBaseUrl()}/api/v1/account`, {
+    method: 'DELETE',
+    headers: authHeaders(),
+    credentials: 'include',
+    body: JSON.stringify(request),
+  }).then((response) => parseApiResponse<{ ok: true }>(response));
 };
 
 export const EXAMPLE_JSON = `{

@@ -2,76 +2,46 @@
 
 **Turn APIs into production-ready code.**
 
-ApiCaptain generates production-ready API models and clients from:
+ApiCaptain is a multi-language API code generator with OpenAPI support and a lightweight SaaS layer (accounts, projects, usage limits).
 
-1. JSON samples → TypeScript (Phase 1)
-2. Method + endpoint + JSON → multi-language clients (Phases 2–3)
-3. **OpenAPI / Swagger → structured multi-file API clients (Phase 4)**
+## Features
 
-## Monorepo architecture
+1. JSON → TypeScript
+2. Endpoint JSON → React Native / Flutter / Swift / Kotlin / Python
+3. OpenAPI / Swagger → structured clients
+4. **Accounts, dashboard, saved projects, usage limits, Pro plan foundation**
 
-```
-ApiCaptain/
-├── apps/
-│   ├── web/                 # Next.js UI (Monaco editors)
-│   └── api/                 # Express REST API + Prisma
-├── packages/
-│   ├── types/               # Shared request/response contracts
-│   ├── config/              # Shared env/config helpers
-│   ├── openapi/             # OpenAPI/Swagger parse + normalize
-│   └── generators/          # Language generators (framework-independent)
-├── docs/
-├── package.json
-├── pnpm-workspace.yaml
-└── turbo.json
-```
-
-Dependency direction:
-
-- `apps/web` → `@apicaptain/types`
-- `apps/api` → `@apicaptain/types` + `@apicaptain/generators` + `@apicaptain/openapi`
-- `@apicaptain/generators` → `@apicaptain/types` + `@apicaptain/openapi`
-- Generators have **no** dependency on Next.js, Express, React, or the database
-
-## Local setup
+## Quick start
 
 ```bash
 pnpm install
 cp .env.example .env
+# set DATABASE_URL + AUTH_SECRET
 pnpm db:generate
-pnpm db:migrate   # when PostgreSQL is available
+pnpm db:migrate
 pnpm dev
 ```
 
 - Web: http://localhost:3000
-- OpenAPI UI: http://localhost:3000/openapi-generator
+- Dashboard: http://localhost:3000/dashboard
+- OpenAPI: http://localhost:3000/openapi-generator
 - API: http://localhost:4000
 
-## API
+For tests without Postgres, the API uses `SAAS_STORE=memory` automatically in the test script.
 
-| Endpoint | Phase |
-|----------|-------|
-| `GET /health` | — |
-| `POST /api/v1/generate/typescript` | 1 |
-| `POST /api/v1/generate/api-code` | 2–3 |
-| `POST /api/v1/openapi/parse` | 4 |
-| `POST /api/v1/openapi/import-url` | 4 |
-| `POST /api/v1/openapi/generate` | 4 |
+## Documentation
+
+- [Phase 1](./docs/phase-1.md) — JSON → TypeScript
+- [Phase 2](./docs/phase-2.md) — React Native Axios/Fetch
+- [Phase 3](./docs/phase-3.md) — Multi-language
+- [Phase 4](./docs/phase-4.md) — OpenAPI / Swagger
+- [Phase 5](./docs/phase-5.md) — SaaS foundations
 
 ## Scripts
 
 | Command | Description |
 |---------|-------------|
 | `pnpm dev` | Start API + web |
-| `pnpm build` | Build all packages/apps |
-| `pnpm typecheck` | TypeScript checks |
-| `pnpm lint` | Lint (tsc-based) |
+| `pnpm build` | Build all |
 | `pnpm test` | Unit + API tests |
 | `pnpm db:migrate` | Apply migrations |
-
-## Documentation
-
-- [Phase 1](./docs/phase-1.md) — JSON → TypeScript
-- [Phase 2](./docs/phase-2.md) — React Native Axios/Fetch
-- [Phase 3](./docs/phase-3.md) — Dart / Swift / Kotlin / Python
-- [Phase 4](./docs/phase-4.md) — OpenAPI / Swagger → clients

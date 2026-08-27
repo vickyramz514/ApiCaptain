@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import type {
   ApiFramework,
   GeneratedFile,
@@ -12,12 +13,15 @@ import type {
 import {
   ApiClientError,
   EXAMPLE_OPENAPI_YAML,
+  createProject,
   generateOpenApiClient,
   importOpenApiUrl,
   parseOpenApi,
+  setSaveDraft,
 } from '../../lib/apiClient';
 import { buildZipBlob } from '../../lib/zip';
 import { CodeEditor } from '../CodeEditor';
+import { useAuth } from '../AuthProvider';
 
 type InputTab = 'upload' | 'paste' | 'url';
 type UiState =
@@ -91,6 +95,8 @@ const methodColor = (method: string): string => {
 };
 
 export function OpenApiWorkspace() {
+  const { user } = useAuth();
+  const router = useRouter();
   const [inputTab, setInputTab] = useState<InputTab>('paste');
   const [pasteText, setPasteText] = useState(EXAMPLE_OPENAPI_YAML);
   const [url, setUrl] = useState('');
@@ -106,6 +112,7 @@ export function OpenApiWorkspace() {
   const [files, setFiles] = useState<GeneratedFile[]>([]);
   const [activeFile, setActiveFile] = useState(0);
   const [copyState, setCopyState] = useState<'idle' | 'copied'>('idle');
+  const [saveName, setSaveName] = useState('');
 
   const libraries = librariesFor(framework);
 
@@ -268,6 +275,36 @@ export function OpenApiWorkspace() {
     anchor.download = 'apicaptain-openapi-client.zip';
     anchor.click();
     URL.revokeObjectURL(href);
+  };
+
+  const saveAsProject = async () => {
+    if (!parsed) return;
+    const draft = {
+      name: saveName.trim() || parsed.title || 'OpenAPI Project',
+      description: parsed.description ?? undefined,
+      sourceType: 'OPENAPI' as const,
+      sourceContent: pasteText,
+      openApiVersion: parsed.openapiVersion,
+      framework,
+      library: framework === 'react-native' ? library : libraries[0]?.id,
+      sourceMeta: {
+        specification: parsed.specification,
+        endpointIds: [...selected],
+        framework,
+        library: framework === 'react-native' ? library : libraries[0]?.id,
+      },
+    };
+    if (!user) {
+      setSaveDraft(draft);
+      router.push('/register?next=/projects');
+      return;
+    }
+    try {
+      const project = await createProject(draft);
+      router.push(`/projects/${project.id}`);
+    } catch (error) {
+      setErrorMessage(error instanceof ApiClientError ? error.message : 'Could not save project');
+    }
   };
 
   return (
@@ -525,6 +562,22 @@ export function OpenApiWorkspace() {
                   className="rounded-md border border-teal-500/60 px-4 py-2 text-sm text-teal-300"
                 >
                   Generate Entire API
+                </button>
+              </div>
+              <div className="mt-4 space-y-2 border-t border-slate-800 pt-4">
+                <p className="text-xs text-slate-400">Save Project</p>
+                <input
+                  value={saveName}
+                  onChange={(event) => setSaveName(event.target.value)}
+                  placeholder={parsed?.title || 'Project name'}
+                  className="w-full rounded-md border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white"
+                />
+                <button
+                  type="button"
+                  onClick={() => void saveAsProject()}
+                  className="rounded-md border border-slate-600 px-4 py-2 text-sm text-slate-200"
+                >
+                  {user ? 'Save Project' : 'Create a free account to save'}
                 </button>
               </div>
             </div>

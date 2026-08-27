@@ -215,3 +215,136 @@ export interface OpenApiGenerateData {
 }
 
 export type OpenApiGenerateResponse = ApiSuccessResponse<OpenApiGenerateData>;
+
+
+/** Phase 5 — SaaS auth, projects, usage */
+export type UserPlan = 'FREE' | 'PRO';
+
+export type ProjectSourceType = 'JSON' | 'API' | 'OPENAPI';
+
+export interface PublicUser {
+  id: string;
+  email: string;
+  name: string | null;
+  plan: UserPlan;
+  createdAt: string;
+  lastLoginAt: string | null;
+}
+
+export interface AuthTokenData {
+  token: string;
+  user: PublicUser;
+}
+
+export interface RegisterRequest {
+  email: string;
+  password: string;
+  name?: string;
+}
+
+export interface LoginRequest {
+  email: string;
+  password: string;
+}
+
+export interface ForgotPasswordRequest {
+  email: string;
+}
+
+export interface ResetPasswordRequest {
+  token: string;
+  password: string;
+}
+
+export interface MeData {
+  user: PublicUser;
+  usage: {
+    period: string;
+    generationCount: number;
+    generationLimit: number | null;
+    projectCount: number;
+    projectLimit: number | null;
+  };
+}
+
+export interface ProjectSummary {
+  id: string;
+  name: string;
+  description: string | null;
+  sourceType: ProjectSourceType;
+  framework: string | null;
+  library: string | null;
+  openApiVersion: string | null;
+  createdAt: string;
+  updatedAt: string;
+  lastGeneratedAt: string | null;
+}
+
+export interface ProjectDetail extends ProjectSummary {
+  sourceContent: string | null;
+  sourceMeta: unknown;
+}
+
+export interface CreateProjectRequest {
+  name: string;
+  description?: string;
+  sourceType: ProjectSourceType;
+  sourceContent?: string;
+  sourceMeta?: unknown;
+  openApiVersion?: string;
+  framework?: string;
+  library?: string;
+}
+
+export interface UpdateProjectRequest {
+  name?: string;
+  description?: string | null;
+  sourceContent?: string | null;
+  sourceMeta?: unknown;
+  openApiVersion?: string | null;
+  framework?: string | null;
+  library?: string | null;
+}
+
+export interface GenerationHistoryItem {
+  id: string;
+  sourceType: string;
+  framework: string | null;
+  language: string | null;
+  library: string | null;
+  endpointCount: number | null;
+  status: 'SUCCESS' | 'FAILED';
+  durationMs: number | null;
+  createdAt: string;
+}
+
+export interface DashboardData {
+  user: PublicUser;
+  usage: MeData['usage'];
+  projectCount: number;
+  recentGenerations: GenerationHistoryItem[];
+  recentProjects: ProjectSummary[];
+}
+
+export interface PricingData {
+  plans: Array<{
+    id: UserPlan;
+    name: string;
+    priceMonthlyInr: number;
+    currency: string;
+    ctaLabel: string;
+    ctaMode: string;
+    highlights: string[];
+    limits: {
+      generationsPerMonth: number | null;
+      projects: number | null;
+      maxOpenApiBytes: number;
+      maxEndpoints: number;
+    };
+  }>;
+}
+
+export interface DeleteAccountRequest {
+  confirmation: 'DELETE';
+  password: string;
+}
