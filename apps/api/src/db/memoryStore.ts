@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import type { UserPlan } from '@apicaptain/types';
+import type { BillingProviderId, SubscriptionStatusId } from '@apicaptain/config';
 
 export type StoreUser = {
   id: string;
@@ -69,6 +70,52 @@ export type StoreUsage = {
   generationCount: number;
 };
 
+export type StoreSubscription = {
+  id: string;
+  userId: string;
+  plan: UserPlan;
+  status: SubscriptionStatusId;
+  provider: BillingProviderId;
+  providerCustomerId: string | null;
+  providerSubscriptionId: string | null;
+  providerPlanId: string | null;
+  currentPeriodStart: Date | null;
+  currentPeriodEnd: Date | null;
+  cancelAtPeriodEnd: boolean;
+  cancelledAt: Date | null;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+export type StorePayment = {
+  id: string;
+  userId: string;
+  subscriptionId: string | null;
+  provider: BillingProviderId;
+  providerPaymentId: string;
+  providerOrderId: string | null;
+  amount: number;
+  currency: string;
+  status: 'CREATED' | 'AUTHORIZED' | 'CAPTURED' | 'FAILED' | 'REFUNDED';
+  paymentMethod: string | null;
+  invoiceUrl: string | null;
+  paidAt: Date | null;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+export type StoreWebhookEvent = {
+  id: string;
+  provider: BillingProviderId;
+  eventId: string;
+  eventType: string;
+  payloadHash: string;
+  processed: boolean;
+  processedAt: Date | null;
+  failureReason: string | null;
+  createdAt: Date;
+};
+
 /** In-memory SaaS store for tests / environments without DB access */
 export class MemorySaasStore {
   users = new Map<string, StoreUser>();
@@ -80,6 +127,9 @@ export class MemorySaasStore {
   projects = new Map<string, StoreProject>();
   generations = new Map<string, StoreGeneration>();
   usage = new Map<string, StoreUsage>();
+  subscriptions = new Map<string, StoreSubscription>();
+  payments = new Map<string, StorePayment>();
+  webhookEvents = new Map<string, StoreWebhookEvent>();
 
   reset(): void {
     this.users.clear();
@@ -91,6 +141,9 @@ export class MemorySaasStore {
     this.projects.clear();
     this.generations.clear();
     this.usage.clear();
+    this.subscriptions.clear();
+    this.payments.clear();
+    this.webhookEvents.clear();
   }
 
   createUser(input: {
@@ -112,6 +165,12 @@ export class MemorySaasStore {
     };
     this.users.set(user.id, user);
     this.usersByEmail.set(user.email, user.id);
+    this.createSubscription({
+      userId: user.id,
+      plan: user.plan,
+      status: 'INACTIVE',
+      provider: 'NONE',
+    });
     return user;
   }
 
@@ -155,6 +214,12 @@ export class MemorySaasStore {
     }
     for (const [uid, usage] of [...this.usage]) {
       if (usage.userId === id) this.usage.delete(uid);
+    }
+    for (const [sid, subscription] of [...this.subscriptions]) {
+      if (subscription.userId === id) this.subscriptions.delete(sid);
+    }
+    for (const [pid, payment] of [...this.payments]) {
+      if (payment.userId === id) this.payments.delete(pid);
     }
     for (const [rid, reset] of [...this.resets]) {
       if (reset.userId === id) {
@@ -325,6 +390,149 @@ export class MemorySaasStore {
     const record = this.getOrCreateUsage(userId, period);
     const next = { ...record, generationCount: record.generationCount + 1 };
     this.usage.set(`${userId}:${period}`, next);
+    return next;
+  }
+
+  listSubscriptions(userId: string): StoreSubscription[] {
+    return [...this.subscriptions.values()]
+      .filter((item) => item.userId === userId)
+      .sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime());
+  }
+
+  getLatestSubscription(userId: string): StoreSubscription | null {
+    return this.listSubscriptions(userId)[0] ?? null;
+  }
+
+  findSubscriptionById(id: string): StoreSubscription | null {
+    return this.subscriptions.get(id) ?? null;
+  }
+
+  findSubscriptionByProviderId(
+    provider: BillingProviderId,
+    providerSubscriptionId: string,
+  ): StoreSubscription | null {
+    return (
+      [...this.subscriptions.values()].find(
+        (item) =>
+          item.provider === provider && item.providerSubscriptionId === providerSubscriptionId,
+      ) ?? null
+    );
+  }
+
+  findSubscriptionByCustomerId(
+    provider: BillingProviderId,
+    providerCustomerId: string,
+  ): StoreSubscription | null {
+    return (
+      [...this.subscriptions.values()].find(
+        (item) => item.provider === provider && item.providerCustomerId === providerCustomerId,
+      ) ?? null
+    );
+  }
+
+  createSubscription(
+    input: Omit<
+      StoreSubscription,
+      | 'id'
+      | 'createdAt'
+      | 'updatedAt'
+      | 'cancelAtPeriodEnd'
+      | 'cancelledAt'
+      | 'providerCustomerId'
+      | 'providerSubscriptionId'
+      | 'providerPlanId'
+      | 'currentPeriodStart'
+      | 'currentPeriodEnd'
+    > & {
+      cancelAtPeriodEnd?: boolean;
+      cancelledAt?: Date | null;
+      providerCustomerId?: string | null;
+      providerSubscriptionId?: string | null;
+      providerPlanId?: string | null;
+      currentPeriodStart?: Date | null;
+      currentPeriodEnd?: Date | null;
+    },
+  ): StoreSubscription {
+    const now = new Date();
+    const subscription: StoreSubscription = {
+      providerCustomerId: input.providerCustomerId ?? null,
+      providerSubscriptionId: input.providerSubscriptionId ?? null,
+      providerPlanId: input.providerPlanId ?? null,
+      currentPeriodStart: input.currentPeriodStart ?? null,
+      currentPeriodEnd: input.currentPeriodEnd ?? null,
+      cancelAtPeriodEnd: input.cancelAtPeriodEnd ?? false,
+      cancelledAt: input.cancelledAt ?? null,
+      userId: input.userId,
+      plan: input.plan,
+      status: input.status,
+      provider: input.provider,
+      id: randomUUID(),
+      createdAt: now,
+      updatedAt: now,
+    };
+    this.subscriptions.set(subscription.id, subscription);
+    return subscription;
+  }
+
+  updateSubscription(id: string, patch: Partial<StoreSubscription>): StoreSubscription {
+    const current = this.subscriptions.get(id);
+    if (!current) throw new Error('SUBSCRIPTION_NOT_FOUND');
+    const next = { ...current, ...patch, id: current.id, userId: current.userId, updatedAt: new Date() };
+    this.subscriptions.set(id, next);
+    return next;
+  }
+
+  upsertPayment(
+    input: Omit<StorePayment, 'id' | 'createdAt' | 'updatedAt'> & { id?: string },
+  ): StorePayment {
+    const existing = [...this.payments.values()].find(
+      (item) => item.provider === input.provider && item.providerPaymentId === input.providerPaymentId,
+    );
+    const now = new Date();
+    if (existing) {
+      const next = { ...existing, ...input, id: existing.id, createdAt: existing.createdAt, updatedAt: now };
+      this.payments.set(existing.id, next);
+      return next;
+    }
+    const payment: StorePayment = {
+      ...input,
+      id: input.id ?? randomUUID(),
+      createdAt: now,
+      updatedAt: now,
+    };
+    this.payments.set(payment.id, payment);
+    return payment;
+  }
+
+  listPayments(userId: string): StorePayment[] {
+    return [...this.payments.values()]
+      .filter((item) => item.userId === userId)
+      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+  }
+
+  webhookKey(provider: BillingProviderId, eventId: string): string {
+    return `${provider}:${eventId}`;
+  }
+
+  getWebhookEvent(provider: BillingProviderId, eventId: string): StoreWebhookEvent | null {
+    return this.webhookEvents.get(this.webhookKey(provider, eventId)) ?? null;
+  }
+
+  createWebhookEvent(input: Omit<StoreWebhookEvent, 'id' | 'createdAt'>): StoreWebhookEvent {
+    const event: StoreWebhookEvent = {
+      ...input,
+      id: randomUUID(),
+      createdAt: new Date(),
+    };
+    this.webhookEvents.set(this.webhookKey(event.provider, event.eventId), event);
+    return event;
+  }
+
+  updateWebhookEvent(provider: BillingProviderId, eventId: string, patch: Partial<StoreWebhookEvent>): StoreWebhookEvent {
+    const current = this.getWebhookEvent(provider, eventId);
+    if (!current) throw new Error('WEBHOOK_NOT_FOUND');
+    const next = { ...current, ...patch, id: current.id };
+    this.webhookEvents.set(this.webhookKey(provider, eventId), next);
     return next;
   }
 }

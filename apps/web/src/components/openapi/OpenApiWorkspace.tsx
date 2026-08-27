@@ -22,6 +22,7 @@ import {
 import { buildZipBlob } from '../../lib/zip';
 import { CodeEditor } from '../CodeEditor';
 import { useAuth } from '../AuthProvider';
+import { UsageLimitNotice } from '../UsageLimitNotice';
 
 type InputTab = 'upload' | 'paste' | 'url';
 type UiState =
@@ -103,6 +104,7 @@ export function OpenApiWorkspace() {
   const [dragOver, setDragOver] = useState(false);
   const [uiState, setUiState] = useState<UiState>('empty');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [lastError, setLastError] = useState<unknown>(null);
   const [parsed, setParsed] = useState<OpenApiParseData | null>(null);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [activeEndpointId, setActiveEndpointId] = useState<string | null>(null);
@@ -242,6 +244,7 @@ export function OpenApiWorkspace() {
     } catch (error) {
       setUiState('failed');
       setFiles([]);
+      setLastError(error);
       setErrorMessage(error instanceof ApiClientError ? error.message : 'Generation failed');
     }
   };
@@ -414,7 +417,13 @@ export function OpenApiWorkspace() {
             : null}
           {parsed ? ` — ${parsed.endpointCount} endpoints found` : null}
         </p>
-        {errorMessage ? <p className="mt-2 text-sm text-rose-400">{errorMessage}</p> : null}
+        {lastError instanceof ApiClientError && lastError.code === 'USAGE_LIMIT_REACHED' ? (
+          <div className="mt-2">
+            <UsageLimitNotice error={lastError} />
+          </div>
+        ) : errorMessage ? (
+          <p className="mt-2 text-sm text-rose-400">{errorMessage}</p>
+        ) : null}
       </section>
 
       {parsed ? (

@@ -129,7 +129,7 @@ export const projectGenerateController = async (
     if (!req.user) throw new AppError('AUTH_REQUIRED', 'Authentication required', 401);
     const id = String(req.params.id ?? '');
     const project = await getProject(req.user, id);
-    await assertCanGenerate(req.user.id, req.user.plan);
+    await assertCanGenerate(req.user.id);
 
     let files: unknown;
     let meta: Record<string, unknown> = {};

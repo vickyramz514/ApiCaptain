@@ -6,6 +6,7 @@ import { generateRoutes } from './generateRoutes.js';
 import { openapiRoutes } from './openapiRoutes.js';
 import { authRoutes } from './authRoutes.js';
 import { projectRoutes } from './projectRoutes.js';
+import { billingRoutes } from './billingRoutes.js';
 import { requireAuth } from '../middleware/auth.js';
 
 const apiRouter: ExpressRouter = Router();
@@ -15,6 +16,7 @@ apiRouter.use('/api/v1/auth', authRoutes);
 apiRouter.delete('/api/v1/account', requireAuth, deleteAccountController);
 apiRouter.get('/api/v1/dashboard', requireAuth, dashboardController);
 apiRouter.use('/api/v1/projects', projectRoutes);
+apiRouter.use('/api/v1/billing', billingRoutes);
 apiRouter.use('/api/v1/generate', generateRoutes);
 apiRouter.use('/api/v1/openapi', openapiRoutes);
 

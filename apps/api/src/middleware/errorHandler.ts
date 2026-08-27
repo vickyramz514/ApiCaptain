@@ -1,4 +1,5 @@
 import type { NextFunction, Request, Response } from 'express';
+import { BillingError } from '@apicaptain/billing';
 import { AppError } from '../utils/errors.js';
 import { sendError } from '../utils/response.js';
 
@@ -15,11 +16,11 @@ export const errorHandler = (
   res: Response,
   _next: NextFunction,
 ): void => {
-  if (error instanceof AppError) {
+  if (error instanceof AppError || error instanceof BillingError) {
     sendError(res, error.statusCode, {
       code: error.code,
       message: error.message,
-      details: error.details,
+      details: error instanceof AppError ? error.details : undefined,
     });
     return;
   }

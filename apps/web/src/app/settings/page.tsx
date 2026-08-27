@@ -3,9 +3,10 @@
 import Link from 'next/link';
 import { FormEvent, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ApiClientError } from '../../lib/apiClient';
+import { ApiClientError, fetchBilling } from '../../lib/apiClient';
 import { useAuth } from '../../components/AuthProvider';
 import { SiteHeader } from '../../components/SiteHeader';
+import type { BillingStatusData } from '@apicaptain/types';
 
 export default function SettingsPage() {
   const { user, usage, loading, removeAccount, refresh } = useAuth();
@@ -14,12 +15,18 @@ export default function SettingsPage() {
   const [confirmText, setConfirmText] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
+  const [billing, setBilling] = useState<BillingStatusData | null>(null);
 
   useEffect(() => {
     if (!loading && !user) {
       router.replace('/login?next=/settings');
     }
   }, [loading, user, router]);
+
+  useEffect(() => {
+    if (!user) return;
+    void fetchBilling().then(setBilling).catch(() => setBilling(null));
+  }, [user]);
 
   const onDelete = async (event: FormEvent) => {
     event.preventDefault();
@@ -58,12 +65,23 @@ export default function SettingsPage() {
 
         <section className="mt-6 rounded-xl border border-slate-800 bg-slate-900/40 p-4">
           <h2 className="text-lg font-semibold text-white">Account</h2>
-          <p className="mt-3 text-sm text-slate-300">Plan: {user?.plan}</p>
+          <p className="mt-3 text-sm text-slate-300">Plan: {billing?.plan ?? user?.plan}</p>
+          <p className="text-sm text-slate-300">Billing status: {billing?.status ?? 'INACTIVE'}</p>
+          <p className="text-sm text-slate-300">
+            Next billing:{' '}
+            {billing?.currentPeriodEnd
+              ? new Date(billing.currentPeriodEnd).toLocaleDateString(undefined, {
+                  day: 'numeric',
+                  month: 'short',
+                  year: 'numeric',
+                })
+              : '—'}
+          </p>
           <p className="text-sm text-slate-300">
             Usage: {usage?.generationCount ?? 0} / {usage?.generationLimit ?? '∞'}
           </p>
-          <Link href="/pricing" className="mt-2 inline-block text-sm text-teal-400 hover:underline">
-            View pricing
+          <Link href="/billing" className="mt-2 inline-block text-sm text-teal-400 hover:underline">
+            Manage Billing
           </Link>
         </section>
 

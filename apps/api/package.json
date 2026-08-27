@@ -11,7 +11,7 @@
     "start": "node dist/index.js",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "lint": "tsc -p tsconfig.json --noEmit",
-    "test": "SAAS_STORE=memory NODE_ENV=test node --import tsx --test src/__tests__/api.test.ts src/__tests__/saas.test.ts",
+    "test": "SAAS_STORE=memory NODE_ENV=test RAZORPAY_KEY_ID=rzp_test_dummy RAZORPAY_KEY_SECRET=test_secret RAZORPAY_WEBHOOK_SECRET=test_webhook_secret RAZORPAY_PRO_PLAN_ID=plan_test_pro node --import tsx --test src/__tests__/api.test.ts src/__tests__/saas.test.ts src/__tests__/billing.test.ts",
     "clean": "rm -rf dist .turbo *.tsbuildinfo",
     "db:generate": "node ../../scripts/with-root-env.mjs prisma generate",
     "db:migrate": "node ../../scripts/with-root-env.mjs prisma migrate deploy",
@@ -21,6 +21,7 @@
     "db:url-info": "node ../../scripts/db-url-info.mjs"
   },
   "dependencies": {
+    "@apicaptain/billing": "workspace:*",
     "@apicaptain/config": "workspace:*",
     "@apicaptain/generators": "workspace:*",
     "@apicaptain/openapi": "workspace:*",

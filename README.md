@@ -2,21 +2,22 @@
 
 **Turn APIs into production-ready code.**
 
-ApiCaptain is a multi-language API code generator with OpenAPI support and a lightweight SaaS layer (accounts, projects, usage limits).
+ApiCaptain is a multi-language API code generator with OpenAPI support, accounts, and Razorpay-powered Pro billing.
 
 ## Features
 
 1. JSON → TypeScript
 2. Endpoint JSON → React Native / Flutter / Swift / Kotlin / Python
 3. OpenAPI / Swagger → structured clients
-4. **Accounts, dashboard, saved projects, usage limits, Pro plan foundation**
+4. Accounts, dashboard, saved projects, usage limits
+5. **Pro billing (₹499/month) via Razorpay** — checkout, webhooks, cancel-at-period-end
 
 ## Quick start
 
 ```bash
 pnpm install
 cp .env.example .env
-# set DATABASE_URL + AUTH_SECRET
+# set DATABASE_URL, AUTH_SECRET, and Razorpay test keys (see docs/phase-6.md)
 pnpm db:generate
 pnpm db:migrate
 pnpm dev
@@ -36,6 +37,7 @@ For tests without Postgres, the API uses `SAAS_STORE=memory` automatically in th
 - [Phase 3](./docs/phase-3.md) — Multi-language
 - [Phase 4](./docs/phase-4.md) — OpenAPI / Swagger
 - [Phase 5](./docs/phase-5.md) — SaaS foundations
+- [Phase 6](./docs/phase-6.md) — Razorpay subscriptions & billing
 
 ## Scripts
 

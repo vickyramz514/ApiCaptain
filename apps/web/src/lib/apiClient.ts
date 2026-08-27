@@ -2,6 +2,7 @@ import type {
   ApiErrorResponse,
   ApiSuccessResponse,
   AuthTokenData,
+  BillingStatusData,
   CreateProjectRequest,
   DashboardData,
   DeleteAccountRequest,
@@ -17,11 +18,14 @@ import type {
   OpenApiParseData,
   OpenApiParseRequest,
   OpenApiImportUrlRequest,
+  PaymentHistoryData,
   PricingData,
   ProjectDetail,
   RegisterRequest,
   ResetPasswordRequest,
+  SubscribeData,
   UpdateProjectRequest,
+  VerifyPaymentRequest,
 } from '@apicaptain/types';
 
 const TOKEN_KEY = 'apicaptain_token';
@@ -199,6 +203,22 @@ export const deleteAccount = (request: DeleteAccountRequest): Promise<{ ok: true
     body: JSON.stringify(request),
   }).then((response) => parseApiResponse<{ ok: true }>(response));
 };
+
+export const fetchBilling = (): Promise<BillingStatusData> => get('/api/v1/billing');
+
+export const fetchBillingPayments = (): Promise<PaymentHistoryData> => get('/api/v1/billing/payments');
+
+export const createSubscriptionCheckout = (): Promise<SubscribeData> =>
+  post('/api/v1/billing/subscribe', {}, true);
+
+export const verifySubscriptionPayment = (request: VerifyPaymentRequest): Promise<BillingStatusData> =>
+  post('/api/v1/billing/verify', request, true);
+
+export const cancelSubscription = (immediately = false): Promise<BillingStatusData> =>
+  post('/api/v1/billing/cancel', { immediately }, true);
+
+export const reactivateSubscription = (): Promise<BillingStatusData> =>
+  post('/api/v1/billing/reactivate', {}, true);
 
 export const EXAMPLE_JSON = `{
   "id": 123,

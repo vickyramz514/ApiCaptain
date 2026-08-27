@@ -4,11 +4,17 @@ import {
   canUseFeature,
   currentUsagePeriod,
   getApiConfig,
+  getBillingConfig,
+  getEffectivePlan,
   getPlanLimits,
   getWebConfig,
+  hasActiveEntitlement,
+  inrToPaise,
   isUnlimitedGenerations,
   PLAN_LIMITS,
   PRICING_PLANS,
+  PRO_MONTHLY_AMOUNT_PAISE,
+  PRO_MONTHLY_PRICE_INR,
 } from './index.js';
 
 test('getApiConfig applies defaults', () => {
@@ -32,7 +38,40 @@ test('plan limits and entitlements', () => {
   assert.equal(canUseFeature('FREE', 'unlimitedGenerations'), false);
   assert.equal(isUnlimitedGenerations('PRO'), true);
   assert.equal(isUnlimitedGenerations('FREE'), false);
-  assert.ok(PRICING_PLANS.some((plan) => plan.id === 'PRO' && plan.priceMonthlyInr === 499));
+  assert.ok(
+    PRICING_PLANS.some(
+      (plan) =>
+        plan.id === 'PRO' &&
+        plan.priceMonthlyInr === PRO_MONTHLY_PRICE_INR &&
+        plan.ctaMode === 'upgrade',
+    ),
+  );
+  assert.equal(PRO_MONTHLY_PRICE_INR, 499);
+  assert.equal(inrToPaise(PRO_MONTHLY_PRICE_INR), PRO_MONTHLY_AMOUNT_PAISE);
+  assert.equal(PRO_MONTHLY_AMOUNT_PAISE, 49900);
+});
+
+test('effective plan from subscription status', () => {
+  const future = new Date('2026-09-27T00:00:00Z');
+  const past = new Date('2026-07-01T00:00:00Z');
+  const now = new Date('2026-08-27T00:00:00Z');
+
+  assert.equal(getEffectivePlan(null, now), 'FREE');
+  assert.equal(getEffectivePlan({ status: 'ACTIVE', currentPeriodEnd: future }, now), 'PRO');
+  assert.equal(getEffectivePlan({ status: 'PAST_DUE', currentPeriodEnd: future }, now), 'PRO');
+  assert.equal(
+    getEffectivePlan({ status: 'CANCELLED', currentPeriodEnd: future, cancelAtPeriodEnd: true }, now),
+    'PRO',
+  );
+  assert.equal(getEffectivePlan({ status: 'CANCELLED', currentPeriodEnd: past }, now), 'FREE');
+  assert.equal(getEffectivePlan({ status: 'EXPIRED', currentPeriodEnd: past }, now), 'FREE');
+  assert.equal(hasActiveEntitlement({ status: 'INACTIVE' }, now), false);
+});
+
+test('getBillingConfig defaults to mock in test', () => {
+  const config = getBillingConfig({ NODE_ENV: 'test' });
+  assert.equal(config.billingProvider, 'mock');
+  assert.equal(getBillingConfig({ NODE_ENV: 'production' }).billingProvider, 'razorpay');
 });
 
 test('currentUsagePeriod format', () => {

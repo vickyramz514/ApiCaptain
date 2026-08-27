@@ -5,6 +5,7 @@ import type { TypeScriptOutputKind } from '@apicaptain/types';
 import { ApiClientError, EXAMPLE_JSON, generateTypeScript } from '../lib/apiClient';
 import { validateJsonText } from '../lib/jsonValidation';
 import { CodeEditor } from './CodeEditor';
+import { UsageLimitNotice } from './UsageLimitNotice';
 
 type Status = 'idle' | 'loading' | 'ready' | 'invalid' | 'error';
 
@@ -13,6 +14,7 @@ export function GeneratorWorkspace() {
   const [code, setCode] = useState('');
   const [status, setStatus] = useState<Status>('idle');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [lastError, setLastError] = useState<unknown>(null);
   const [copyState, setCopyState] = useState<'idle' | 'copied'>('idle');
 
   const [rootName, setRootName] = useState('User');
@@ -34,6 +36,7 @@ export function GeneratorWorkspace() {
 
     setStatus('loading');
     setErrorMessage(null);
+    setLastError(null);
 
     try {
       const data = await generateTypeScript({
@@ -49,6 +52,7 @@ export function GeneratorWorkspace() {
     } catch (error) {
       setStatus('error');
       setCode('');
+      setLastError(error);
       if (error instanceof ApiClientError) {
         setErrorMessage(error.message);
       } else if (error instanceof Error) {
@@ -253,7 +257,9 @@ export function GeneratorWorkspace() {
               />
             )}
           </div>
-          {errorMessage && status !== 'invalid' ? (
+          {lastError instanceof ApiClientError && lastError.code === 'USAGE_LIMIT_REACHED' ? (
+            <UsageLimitNotice error={lastError} />
+          ) : errorMessage && status !== 'invalid' ? (
             <p className="rounded-lg border border-rose-500/40 bg-rose-950/40 px-3 py-2 text-sm text-rose-200" role="alert">
               {errorMessage}
             </p>

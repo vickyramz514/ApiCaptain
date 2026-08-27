@@ -21,6 +21,7 @@ import {
 } from '../auth/crypto.js';
 import { emailService } from './emailService.js';
 import { getUsageSnapshot } from './usageService.js';
+import { resolveEffectivePlan } from './entitlementService.js';
 import type { User } from '@prisma/client';
 import type { StoreUser } from '../db/memoryStore.js';
 
@@ -28,11 +29,11 @@ const SESSION_COOKIE = 'apicaptain_session';
 
 export { SESSION_COOKIE };
 
-const asPublic = (user: User | StoreUser): PublicUser => ({
+const asPublic = (user: User | StoreUser, plan?: PublicUser['plan']): PublicUser => ({
   id: user.id,
   email: user.email,
   name: user.name,
-  plan: user.plan as PublicUser['plan'],
+  plan: plan ?? (user.plan as PublicUser['plan']),
   createdAt: user.createdAt.toISOString(),
   lastLoginAt: user.lastLoginAt ? user.lastLoginAt.toISOString() : null,
 });
@@ -158,7 +159,8 @@ export const resolveUserFromToken = async (token: string | null): Promise<Public
       return null;
     }
     const user = memoryStore.findUserById(session.userId);
-    return user ? asPublic(user) : null;
+    if (!user) return null;
+    return asPublic(user, await resolveEffectivePlan(user.id));
   }
 
   const session = await prisma.session.findUnique({
@@ -169,13 +171,16 @@ export const resolveUserFromToken = async (token: string | null): Promise<Public
     if (session) await prisma.session.delete({ where: { id: session.id } });
     return null;
   }
-  return asPublic(session.user);
+  return asPublic(session.user, await resolveEffectivePlan(session.user.id));
 };
 
-export const getMe = async (user: PublicUser): Promise<MeData> => ({
-  user,
-  usage: await getUsageSnapshot(user.id, user.plan),
-});
+export const getMe = async (user: PublicUser): Promise<MeData> => {
+  const plan = await resolveEffectivePlan(user.id);
+  return {
+    user: { ...user, plan },
+    usage: await getUsageSnapshot(user.id, plan),
+  };
+};
 
 export const forgotPassword = async (request: ForgotPasswordRequest): Promise<{ ok: true }> => {
   const email = normalizeEmail(request.email);

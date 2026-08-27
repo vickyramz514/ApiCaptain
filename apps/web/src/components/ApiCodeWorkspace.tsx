@@ -14,6 +14,7 @@ import {
 import { validateJsonText } from '../lib/jsonValidation';
 import { CodeEditor } from './CodeEditor';
 import { useAuth } from './AuthProvider';
+import { UsageLimitNotice } from './UsageLimitNotice';
 
 const METHODS: HttpMethod[] = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'];
 const BODY_METHODS = new Set<HttpMethod>(['POST', 'PUT', 'PATCH']);
@@ -56,6 +57,7 @@ export function ApiCodeWorkspace() {
   const [activeFile, setActiveFile] = useState(0);
   const [status, setStatus] = useState<'idle' | 'loading' | 'ready' | 'error'>('idle');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [lastError, setLastError] = useState<unknown>(null);
   const [copyState, setCopyState] = useState<'idle' | 'copied'>('idle');
 
   const needsBody = BODY_METHODS.has(method);
@@ -87,6 +89,7 @@ export function ApiCodeWorkspace() {
     }
 
     setStatus('loading');
+    setLastError(null);
 
     try {
       const data = await generateApiCode({
@@ -103,6 +106,7 @@ export function ApiCodeWorkspace() {
     } catch (error) {
       setStatus('error');
       setFiles([]);
+      setLastError(error);
       setErrorMessage(
         error instanceof ApiClientError
           ? error.message
@@ -317,7 +321,9 @@ export function ApiCodeWorkspace() {
         ) : null}
       </div>
 
-      {errorMessage ? (
+      {lastError instanceof ApiClientError && lastError.code === 'USAGE_LIMIT_REACHED' ? (
+        <UsageLimitNotice error={lastError} />
+      ) : errorMessage ? (
         <p className="rounded-lg border border-rose-500/40 bg-rose-950/40 px-3 py-2 text-sm text-rose-200" role="alert">
           {errorMessage}
         </p>

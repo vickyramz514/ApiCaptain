@@ -14,7 +14,7 @@ export const generateTypeScriptController = async (
 ): Promise<void> => {
   try {
     if (req.user) {
-      await assertCanGenerate(req.user.id, req.user.plan);
+      await assertCanGenerate(req.user.id);
     }
     const request = validateGenerateTypeScriptRequest(req.body);
     const data = generateTypeScriptService(request);
@@ -34,7 +34,7 @@ export const generateApiCodeController = async (
 ): Promise<void> => {
   try {
     if (req.user) {
-      await assertCanGenerate(req.user.id, req.user.plan);
+      await assertCanGenerate(req.user.id);
     }
     const request = validateGenerateApiCodeRequest(req.body);
     const data = generateApiCodeService(request);

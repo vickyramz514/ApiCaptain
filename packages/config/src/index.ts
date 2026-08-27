@@ -26,13 +26,76 @@ export interface PlanFeatures {
   priorityProcessing: boolean;
 }
 
+export const BILLING_CURRENCY = 'INR' as const;
+export const PRO_MONTHLY_PRICE_INR = 499;
+export const PAISA_PER_INR = 100;
+export const PRO_MONTHLY_AMOUNT_PAISE = PRO_MONTHLY_PRICE_INR * PAISA_PER_INR;
+export const PRO_PLAN_NAME = 'ApiCaptain Pro';
+export const RAZORPAY_SUBSCRIPTION_TOTAL_COUNT = 120;
+
+export const inrToPaise = (majorUnits: number): number =>
+  Math.round(majorUnits * PAISA_PER_INR);
+
+export const paiseToInr = (paise: number): number => Math.round(paise) / PAISA_PER_INR;
+
+export const formatInrFromMajor = (majorUnits: number): string => `₹${majorUnits}`;
+
+export const formatInrFromPaise = (paise: number): string =>
+  formatInrFromMajor(Math.round(paise / PAISA_PER_INR));
+
+export type SubscriptionStatusId =
+  | 'ACTIVE'
+  | 'TRIALING'
+  | 'PAST_DUE'
+  | 'CANCELLED'
+  | 'EXPIRED'
+  | 'INACTIVE';
+
+export type BillingProviderId = 'NONE' | 'RAZORPAY' | 'STRIPE';
+
+export interface SubscriptionEntitlementInput {
+  status: SubscriptionStatusId;
+  currentPeriodEnd?: Date | string | null;
+  cancelAtPeriodEnd?: boolean;
+}
+
+export const hasActiveEntitlement = (
+  subscription: SubscriptionEntitlementInput | null | undefined,
+  now = new Date(),
+): boolean => {
+  if (!subscription) return false;
+  const end = subscription.currentPeriodEnd
+    ? new Date(subscription.currentPeriodEnd).getTime()
+    : Number.NaN;
+  const periodOpen = Number.isFinite(end) && end > now.getTime();
+
+  switch (subscription.status) {
+    case 'ACTIVE':
+    case 'TRIALING':
+      return true;
+    case 'PAST_DUE':
+      return !Number.isFinite(end) || periodOpen;
+    case 'CANCELLED':
+      return periodOpen;
+    case 'EXPIRED':
+    case 'INACTIVE':
+    default:
+      return false;
+  }
+};
+
+export const getEffectivePlan = (
+  subscription: SubscriptionEntitlementInput | null | undefined,
+  now = new Date(),
+): UserPlanId => (hasActiveEntitlement(subscription, now) ? 'PRO' : 'FREE');
+
 export interface PricingPlan {
   id: UserPlanId;
   name: string;
   priceMonthlyInr: number;
   currency: 'INR';
   ctaLabel: string;
-  ctaMode: 'current' | 'coming_soon' | 'contact';
+  ctaMode: 'current' | 'coming_soon' | 'upgrade' | 'contact';
   highlights: string[];
 }
 
@@ -75,7 +138,7 @@ export const PRICING_PLANS: PricingPlan[] = [
     id: 'FREE',
     name: 'Free',
     priceMonthlyInr: 0,
-    currency: 'INR',
+    currency: BILLING_CURRENCY,
     ctaLabel: 'Get started',
     ctaMode: 'current',
     highlights: [
@@ -88,10 +151,10 @@ export const PRICING_PLANS: PricingPlan[] = [
   {
     id: 'PRO',
     name: 'Pro',
-    priceMonthlyInr: 499,
-    currency: 'INR',
+    priceMonthlyInr: PRO_MONTHLY_PRICE_INR,
+    currency: BILLING_CURRENCY,
     ctaLabel: 'Upgrade to Pro',
-    ctaMode: 'coming_soon',
+    ctaMode: 'upgrade',
     highlights: [
       'Unlimited generations',
       'Unlimited projects',
@@ -125,6 +188,14 @@ export interface ApiConfig {
   appUrl: string;
   sessionTtlDays: number;
   passwordResetTtlMinutes: number;
+}
+
+export interface BillingConfig {
+  razorpayKeyId: string;
+  razorpayKeySecret: string;
+  razorpayWebhookSecret: string;
+  razorpayProPlanId: string;
+  billingProvider: 'razorpay' | 'mock';
 }
 
 export interface WebConfig {
@@ -168,6 +239,22 @@ export const getWebConfig = (env?: EnvMap): WebConfig => {
     apiUrl: source.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000',
     nodeEnv: source.NODE_ENV ?? 'development',
     siteUrl: source.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000',
+  };
+};
+
+export const getBillingConfig = (env?: EnvMap): BillingConfig => {
+  const source = readEnv(env);
+  const nodeEnv = source.NODE_ENV ?? 'development';
+  const explicit = source.BILLING_PROVIDER?.trim().toLowerCase();
+  const billingProvider: BillingConfig['billingProvider'] =
+    explicit === 'mock' || (explicit !== 'razorpay' && nodeEnv === 'test') ? 'mock' : 'razorpay';
+
+  return {
+    razorpayKeyId: source.RAZORPAY_KEY_ID ?? '',
+    razorpayKeySecret: source.RAZORPAY_KEY_SECRET ?? '',
+    razorpayWebhookSecret: source.RAZORPAY_WEBHOOK_SECRET ?? '',
+    razorpayProPlanId: source.RAZORPAY_PRO_PLAN_ID ?? '',
+    billingProvider,
   };
 };
 

@@ -46,7 +46,7 @@ export const generateOpenApiController = async (
 ): Promise<void> => {
   try {
     if (req.user) {
-      await assertCanGenerate(req.user.id, req.user.plan);
+      await assertCanGenerate(req.user.id);
     }
     const request = validateOpenApiGenerateRequest(req.body);
     const data = generateOpenApiService(request);

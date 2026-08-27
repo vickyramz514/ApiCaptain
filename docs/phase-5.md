@@ -78,7 +78,7 @@ Public tools stay available without login. Save Project prompts account creation
 
 ## Payments
 
-Subscription model is ready (`RAZORPAY` / `STRIPE` providers). Checkout is **not** implemented — Pro CTA shows “Coming soon”.
+Phase 6 implements Razorpay checkout, webhooks, and subscription lifecycle. See [phase-6.md](./phase-6.md).
 
 ## Security notes
 

@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+
 import { useAuth } from './AuthProvider';
 
 export function SiteHeader() {
@@ -27,17 +28,26 @@ export function SiteHeader() {
               <Link href="/projects" className="hover:text-teal-300">
                 Projects
               </Link>
+              <Link href="/" className="hover:text-teal-300">
+                Tools
+              </Link>
+              <Link href="/billing" className="hover:text-teal-300">
+                Billing
+              </Link>
             </>
-          ) : null}
-          <Link href="/" className="hover:text-teal-300">
-            Tools
-          </Link>
-          <Link href="/openapi-generator" className="hover:text-teal-300">
-            OpenAPI
-          </Link>
-          <Link href="/pricing" className="hover:text-teal-300">
-            Pricing
-          </Link>
+          ) : (
+            <>
+              <Link href="/" className="hover:text-teal-300">
+                Tools
+              </Link>
+              <Link href="/openapi-generator" className="hover:text-teal-300">
+                OpenAPI Generator
+              </Link>
+              <Link href="/pricing" className="hover:text-teal-300">
+                Pricing
+              </Link>
+            </>
+          )}
           {loading ? null : user ? (
             <>
               <Link href="/settings" className="hover:text-teal-300">

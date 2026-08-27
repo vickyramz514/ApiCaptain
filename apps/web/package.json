@@ -13,6 +13,7 @@
     "clean": "rm -rf .next .turbo *.tsbuildinfo"
   },
   "dependencies": {
+    "@apicaptain/config": "workspace:*",
     "@apicaptain/types": "workspace:*",
     "@monaco-editor/react": "^4.7.0",
     "monaco-editor": "^0.52.2",

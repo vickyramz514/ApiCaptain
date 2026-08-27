@@ -12,6 +12,7 @@ import { AppError } from '../utils/errors.js';
 import { memoryStore, useMemoryStore, type StoreGeneration, type StoreProject } from '../db/memoryStore.js';
 import { prisma } from '../db/prisma.js';
 import { assertCanCreateProject, getUsageSnapshot, recordSuccessfulGeneration } from './usageService.js';
+import { resolveEffectivePlan } from './entitlementService.js';
 
 const SOURCE_TYPES = new Set(['JSON', 'API', 'OPENAPI']);
 
@@ -78,7 +79,7 @@ export const createProject = async (
     throw new AppError('VALIDATION_ERROR', 'sourceType must be JSON, API, or OPENAPI');
   }
 
-  await assertCanCreateProject(user.id, user.plan);
+  await assertCanCreateProject(user.id);
 
   if (useMemoryStore()) {
     const project = memoryStore.createProject({
@@ -280,10 +281,12 @@ export const recordProjectGeneration = async (input: {
 };
 
 export const getDashboard = async (user: PublicUser): Promise<DashboardData> => {
-  const usage = await getUsageSnapshot(user.id, user.plan);
+  const plan = await resolveEffectivePlan(user.id);
+  const currentUser = { ...user, plan };
+  const usage = await getUsageSnapshot(user.id, plan);
   if (useMemoryStore()) {
     return {
-      user,
+      user: currentUser,
       usage,
       projectCount: usage.projectCount,
       recentGenerations: memoryStore.listRecentGenerations(user.id, 5).map(toHistoryItem),
@@ -305,7 +308,7 @@ export const getDashboard = async (user: PublicUser): Promise<DashboardData> => 
   ]);
 
   return {
-    user,
+    user: currentUser,
     usage,
     projectCount: usage.projectCount,
     recentGenerations: recentGenerations.map(toHistoryItem),

@@ -3,15 +3,18 @@ import {
   getPlanLimits,
   isUnlimitedGenerations,
   isUnlimitedProjects,
+  PRO_MONTHLY_PRICE_INR,
   type UserPlanId,
 } from '@apicaptain/config';
 import { AppError } from '../utils/errors.js';
 import { memoryStore, useMemoryStore } from '../db/memoryStore.js';
 import { prisma } from '../db/prisma.js';
+import { resolveEffectivePlan } from './entitlementService.js';
 
-export const assertCanCreateProject = async (userId: string, plan: UserPlanId): Promise<void> => {
-  if (isUnlimitedProjects(plan)) return;
-  const limits = getPlanLimits(plan);
+export const assertCanCreateProject = async (userId: string, plan?: UserPlanId): Promise<void> => {
+  const effective = plan ?? (await resolveEffectivePlan(userId));
+  if (isUnlimitedProjects(effective)) return;
+  const limits = getPlanLimits(effective);
   const count = useMemoryStore()
     ? memoryStore.countProjects(userId)
     : await prisma.project.count({ where: { userId } });
@@ -24,9 +27,10 @@ export const assertCanCreateProject = async (userId: string, plan: UserPlanId): 
   }
 };
 
-export const getUsageSnapshot = async (userId: string, plan: UserPlanId) => {
+export const getUsageSnapshot = async (userId: string, plan?: UserPlanId) => {
+  const effective = plan ?? (await resolveEffectivePlan(userId));
   const period = currentUsagePeriod();
-  const limits = getPlanLimits(plan);
+  const limits = getPlanLimits(effective);
   const generationCount = useMemoryStore()
     ? memoryStore.getOrCreateUsage(userId, period).generationCount
     : (
@@ -50,15 +54,16 @@ export const getUsageSnapshot = async (userId: string, plan: UserPlanId) => {
   };
 };
 
-export const assertCanGenerate = async (userId: string, plan: UserPlanId): Promise<void> => {
-  if (isUnlimitedGenerations(plan)) return;
-  const usage = await getUsageSnapshot(userId, plan);
+export const assertCanGenerate = async (userId: string, plan?: UserPlanId): Promise<void> => {
+  const effective = plan ?? (await resolveEffectivePlan(userId));
+  if (isUnlimitedGenerations(effective)) return;
+  const usage = await getUsageSnapshot(userId, effective);
   if (usage.generationLimit !== null && usage.generationCount >= usage.generationLimit) {
     throw new AppError(
       'USAGE_LIMIT_REACHED',
-      'You have reached your monthly generation limit.',
+      "You've reached your monthly generation limit.",
       403,
-      { period: usage.period, limit: usage.generationLimit },
+      { period: usage.period, limit: usage.generationLimit, upgradePriceInr: PRO_MONTHLY_PRICE_INR },
     );
   }
 };

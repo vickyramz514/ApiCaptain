@@ -3,10 +3,11 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import type { DashboardData } from '@apicaptain/types';
-import { ApiClientError, fetchDashboard } from '../../lib/apiClient';
+import type { DashboardData, BillingStatusData } from '@apicaptain/types';
+import { ApiClientError, fetchBilling, fetchDashboard } from '../../lib/apiClient';
 import { useAuth } from '../../components/AuthProvider';
 import { SiteHeader } from '../../components/SiteHeader';
+import { startProCheckout } from '../../components/ProCheckout';
 
 const greeting = (): string => {
   const hour = new Date().getHours();
@@ -19,6 +20,7 @@ export default function DashboardPage() {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
   const [data, setData] = useState<DashboardData | null>(null);
+  const [billing, setBilling] = useState<BillingStatusData | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -27,8 +29,11 @@ export default function DashboardPage() {
       router.replace('/login?next=/dashboard');
       return;
     }
-    void fetchDashboard()
-      .then(setData)
+    void Promise.all([fetchDashboard(), fetchBilling()])
+      .then(([dashboard, status]) => {
+        setData(dashboard);
+        setBilling(status);
+      })
       .catch((err) =>
         setError(err instanceof ApiClientError ? err.message : 'Failed to load dashboard'),
       );
@@ -39,6 +44,8 @@ export default function DashboardPage() {
   const count = usage?.generationCount ?? 0;
   const pct = limit ? Math.min(100, Math.round((count / limit) * 100)) : 0;
   const remaining = limit === null || limit === undefined ? null : Math.max(0, limit - count);
+  const isPro = (data?.user.plan ?? user?.plan) === 'PRO';
+  const approaching = Boolean(limit && pct >= 80 && remaining !== 0);
 
   return (
     <div className="min-h-screen">
@@ -66,27 +73,48 @@ export default function DashboardPage() {
         <div className="mt-8 grid gap-4 sm:grid-cols-3">
           <div className="rounded-xl border border-slate-800 bg-slate-900/50 p-4">
             <p className="text-xs uppercase tracking-wide text-slate-500">Plan</p>
-            <p className="mt-2 text-2xl font-semibold text-white">{user?.plan ?? 'FREE'}</p>
+            <p className="mt-2 text-2xl font-semibold text-white">{data?.user.plan ?? user?.plan ?? 'FREE'}</p>
+            {isPro && billing?.currentPeriodEnd ? (
+              <p className="mt-2 text-sm text-slate-400">
+                Next billing:{' '}
+                {new Date(billing.currentPeriodEnd).toLocaleDateString(undefined, {
+                  day: 'numeric',
+                  month: 'short',
+                  year: 'numeric',
+                })}
+              </p>
+            ) : null}
+            <Link href="/billing" className="mt-3 inline-block text-sm text-teal-400 hover:underline">
+              Manage Billing
+            </Link>
           </div>
           <div className="rounded-xl border border-slate-800 bg-slate-900/50 p-4 sm:col-span-2">
             <p className="text-xs uppercase tracking-wide text-slate-500">Monthly usage</p>
             <p className="mt-2 text-2xl font-semibold text-white">
-              {count} / {limit ?? '∞'} generations
+              {isPro ? 'Unlimited' : `${count} / ${limit ?? '∞'} generations`}
             </p>
             {limit ? (
               <div className="mt-3 h-2 overflow-hidden rounded-full bg-slate-800">
                 <div className="h-full bg-teal-400" style={{ width: `${pct}%` }} />
               </div>
             ) : null}
-            {remaining !== null && remaining <= 10 && remaining > 0 ? (
+            {approaching ? (
+              <p className="mt-2 text-sm text-amber-300">
+                You&apos;re approaching your monthly limit.{' '}
+                <button type="button" className="underline" onClick={() => void startProCheckout()}>
+                  Upgrade to Pro
+                </button>
+              </p>
+            ) : null}
+            {remaining !== null && remaining <= 10 && remaining > 0 && !approaching ? (
               <p className="mt-2 text-sm text-amber-300">Only {remaining} generations remaining.</p>
             ) : null}
             {remaining === 0 ? (
               <p className="mt-2 text-sm text-rose-300">
                 You&apos;ve reached your monthly limit.{' '}
-                <Link href="/pricing" className="underline">
+                <button type="button" className="underline" onClick={() => void startProCheckout()}>
                   Upgrade to Pro
-                </Link>
+                </button>
               </p>
             ) : null}
           </div>

@@ -348,3 +348,66 @@ export interface DeleteAccountRequest {
   confirmation: 'DELETE';
   password: string;
 }
+
+/** Phase 6 — Billing */
+export type SubscriptionStatus =
+  | 'ACTIVE'
+  | 'TRIALING'
+  | 'PAST_DUE'
+  | 'CANCELLED'
+  | 'EXPIRED'
+  | 'INACTIVE';
+
+export type BillingProvider = 'NONE' | 'RAZORPAY' | 'STRIPE';
+
+export type PaymentStatus = 'CREATED' | 'AUTHORIZED' | 'CAPTURED' | 'FAILED' | 'REFUNDED';
+
+export interface BillingStatusData {
+  plan: UserPlan;
+  status: SubscriptionStatus;
+  provider: BillingProvider;
+  currentPeriodStart: string | null;
+  currentPeriodEnd: string | null;
+  cancelAtPeriodEnd: boolean;
+  cancelledAt: string | null;
+  priceMonthlyInr: number;
+  currency: 'INR';
+  amountPaise: number;
+  paymentMethod: string | null;
+}
+
+export interface SubscribeData {
+  subscriptionId: string;
+  provider: 'razorpay';
+  keyId: string;
+  plan: 'PRO';
+  amountPaise: number;
+  currency: 'INR';
+  name: string;
+  description: string;
+}
+
+export interface VerifyPaymentRequest {
+  razorpay_payment_id: string;
+  razorpay_subscription_id: string;
+  razorpay_signature: string;
+}
+
+export interface CancelSubscriptionRequest {
+  immediately?: boolean;
+}
+
+export interface PaymentHistoryItem {
+  id: string;
+  providerPaymentId: string;
+  amount: number;
+  currency: string;
+  status: PaymentStatus;
+  paidAt: string | null;
+  createdAt: string;
+  invoiceUrl: string | null;
+}
+
+export interface PaymentHistoryData {
+  payments: PaymentHistoryItem[];
+}
