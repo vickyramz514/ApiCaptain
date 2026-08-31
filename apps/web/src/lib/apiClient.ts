@@ -143,6 +143,9 @@ export const register = (request: RegisterRequest): Promise<AuthTokenData> =>
 export const login = (request: LoginRequest): Promise<AuthTokenData> =>
   post('/api/v1/auth/login', request);
 
+export const loginWithGoogle = (credential: string): Promise<AuthTokenData> =>
+  post('/api/v1/auth/google', { credential });
+
 export const logout = (): Promise<{ ok: true }> => post('/api/v1/auth/logout', {}, true);
 
 export const fetchMe = (): Promise<MeData> => get('/api/v1/auth/me');

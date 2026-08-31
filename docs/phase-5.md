@@ -4,12 +4,13 @@ SaaS foundations: accounts, projects, usage limits, and Pro plan architecture.
 
 ## Authentication
 
-Email/password with bcrypt hashing and opaque session tokens.
+Email/password with bcrypt hashing and opaque session tokens, plus Google Sign-In (GIS ID token) using the same OAuth client as DataCaptain.
 
 | Method | Path |
 |--------|------|
 | POST | `/api/v1/auth/register` |
 | POST | `/api/v1/auth/login` |
+| POST | `/api/v1/auth/google` |
 | POST | `/api/v1/auth/logout` |
 | POST | `/api/v1/auth/forgot-password` |
 | POST | `/api/v1/auth/reset-password` |
@@ -17,6 +18,10 @@ Email/password with bcrypt hashing and opaque session tokens.
 | DELETE | `/api/v1/account` |
 
 Sessions are stored hashed server-side. Clients send `Authorization: Bearer <token>` (also httpOnly cookie).
+
+Google Sign-In (`POST /api/v1/auth/google` with `{ credential }`) verifies a Google ID token with `google-auth-library` (`audience` = `GOOGLE_CLIENT_ID`). New Google users are created as FREE accounts with no password. Password login of Google-only users returns “Please sign in with Google”. Email register of an existing Google-only account returns the same guidance.
+
+Add this site’s origin to the shared Google OAuth client’s **Authorized JavaScript origins** (`http://localhost:3000` and the production site URL).
 
 Password resets use `EmailService` (dev logs the link; production is provider-ready, no provider wired yet).
 

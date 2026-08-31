@@ -5,6 +5,7 @@ import {
   forgotPassword,
   getMe,
   loginUser,
+  loginWithGoogle,
   logoutUser,
   registerUser,
   resetPassword,
@@ -14,6 +15,7 @@ import type { AuthedRequest } from '../middleware/auth.js';
 import {
   validateDeleteAccount,
   validateForgotPassword,
+  validateGoogleLogin,
   validateLogin,
   validateRegister,
   validateResetPassword,
@@ -62,6 +64,24 @@ export const loginController = async (
   try {
     const body = validateLogin(req.body);
     const data = await loginUser(body, {
+      userAgent: req.get('user-agent') ?? undefined,
+      ipAddress: req.ip,
+    });
+    setSessionCookie(res, data.token);
+    sendSuccess(res, data);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const googleLoginController = async (
+  req: AuthedRequest,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
+  try {
+    const body = validateGoogleLogin(req.body);
+    const data = await loginWithGoogle(body.credential, {
       userAgent: req.get('user-agent') ?? undefined,
       ipAddress: req.ip,
     });

@@ -16,6 +16,7 @@ import {
   fetchMe,
   getStoredToken,
   login,
+  loginWithGoogle,
   logout,
   register,
   setStoredToken,
@@ -28,8 +29,9 @@ interface AuthContextValue {
   refresh: () => Promise<void>;
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string, name?: string) => Promise<void>;
+  signInWithGoogle: (credential: string) => Promise<void>;
   signOut: () => Promise<void>;
-  removeAccount: (password: string) => Promise<void>;
+  removeAccount: (password?: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -80,6 +82,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       },
       async signUp(email, password, name) {
         const data = await register({ email, password, name });
+        setStoredToken(data.token);
+        setUser(data.user);
+        await refresh();
+      },
+      async signInWithGoogle(credential) {
+        const data = await loginWithGoogle(credential);
         setStoredToken(data.token);
         setUser(data.user);
         await refresh();

@@ -2,6 +2,7 @@ import type {
   CreateProjectRequest,
   DeleteAccountRequest,
   ForgotPasswordRequest,
+  GoogleLoginRequest,
   LoginRequest,
   RegisterRequest,
   ResetPasswordRequest,
@@ -30,6 +31,13 @@ export const validateLogin = (body: unknown): LoginRequest => {
     throw new AppError('VALIDATION_ERROR', 'email and password are required');
   }
   return { email: body.email, password: body.password };
+};
+
+export const validateGoogleLogin = (body: unknown): GoogleLoginRequest => {
+  if (!isObject(body) || typeof body.credential !== 'string' || !body.credential.trim()) {
+    throw new AppError('VALIDATION_ERROR', 'credential is required');
+  }
+  return { credential: body.credential };
 };
 
 export const validateForgotPassword = (body: unknown): ForgotPasswordRequest => {
@@ -99,8 +107,11 @@ export const validateUpdateProject = (body: unknown): UpdateProjectRequest => {
 
 export const validateDeleteAccount = (body: unknown): DeleteAccountRequest => {
   if (!isObject(body)) throw new AppError('VALIDATION_ERROR', 'Invalid body');
-  if (body.confirmation !== 'DELETE' || typeof body.password !== 'string') {
-    throw new AppError('VALIDATION_ERROR', 'confirmation DELETE and password are required');
+  if (body.confirmation !== 'DELETE') {
+    throw new AppError('VALIDATION_ERROR', 'confirmation DELETE is required');
   }
-  return { confirmation: 'DELETE', password: body.password };
+  return {
+    confirmation: 'DELETE',
+    password: typeof body.password === 'string' ? body.password : undefined,
+  };
 };

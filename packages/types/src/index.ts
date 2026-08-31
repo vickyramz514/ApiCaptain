@@ -220,6 +220,8 @@ export type OpenApiGenerateResponse = ApiSuccessResponse<OpenApiGenerateData>;
 /** Phase 5 — SaaS auth, projects, usage */
 export type UserPlan = 'FREE' | 'PRO';
 
+export type AuthProvider = 'email' | 'google';
+
 export type ProjectSourceType = 'JSON' | 'API' | 'OPENAPI';
 
 export interface PublicUser {
@@ -227,6 +229,7 @@ export interface PublicUser {
   email: string;
   name: string | null;
   plan: UserPlan;
+  authProvider: AuthProvider;
   createdAt: string;
   lastLoginAt: string | null;
 }
@@ -245,6 +248,10 @@ export interface RegisterRequest {
 export interface LoginRequest {
   email: string;
   password: string;
+}
+
+export interface GoogleLoginRequest {
+  credential: string;
 }
 
 export interface ForgotPasswordRequest {
@@ -346,7 +353,8 @@ export interface PricingData {
 
 export interface DeleteAccountRequest {
   confirmation: 'DELETE';
-  password: string;
+  /** Required for email/password accounts; omitted for Google-only accounts */
+  password?: string;
 }
 
 /** Phase 6 — Billing */

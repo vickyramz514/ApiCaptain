@@ -188,6 +188,8 @@ export interface ApiConfig {
   appUrl: string;
   sessionTtlDays: number;
   passwordResetTtlMinutes: number;
+  googleClientId: string;
+  googleClientSecret: string;
 }
 
 export interface BillingConfig {
@@ -202,6 +204,7 @@ export interface WebConfig {
   apiUrl: string;
   nodeEnv: string;
   siteUrl: string;
+  googleClientId: string;
 }
 
 export type EnvMap = Record<string, string | undefined>;
@@ -230,6 +233,8 @@ export const getApiConfig = (env?: EnvMap): ApiConfig => {
     appUrl: source.APP_URL ?? source.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000',
     sessionTtlDays: toNumber(source.SESSION_TTL_DAYS, 30),
     passwordResetTtlMinutes: toNumber(source.PASSWORD_RESET_TTL_MINUTES, 60),
+    googleClientId: source.GOOGLE_CLIENT_ID ?? '',
+    googleClientSecret: source.GOOGLE_CLIENT_SECRET ?? '',
   };
 };
 
@@ -239,6 +244,7 @@ export const getWebConfig = (env?: EnvMap): WebConfig => {
     apiUrl: source.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000',
     nodeEnv: source.NODE_ENV ?? 'development',
     siteUrl: source.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000',
+    googleClientId: source.NEXT_PUBLIC_GOOGLE_CLIENT_ID ?? source.GOOGLE_CLIENT_ID ?? '',
   };
 };
 

@@ -16,6 +16,7 @@
     "@apicaptain/config": "workspace:*",
     "@apicaptain/types": "workspace:*",
     "@monaco-editor/react": "^4.7.0",
+    "@react-oauth/google": "^0.13.5",
     "monaco-editor": "^0.52.2",
     "next": "^15.3.2",
     "react": "^19.1.0",

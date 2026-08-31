@@ -19,6 +19,7 @@ import {
   validatePasswordStrength,
   verifyPassword,
 } from '../auth/crypto.js';
+import { verifyGoogleIdToken } from '../auth/google.js';
 import { emailService } from './emailService.js';
 import { getUsageSnapshot } from './usageService.js';
 import { resolveEffectivePlan } from './entitlementService.js';
@@ -34,6 +35,7 @@ const asPublic = (user: User | StoreUser, plan?: PublicUser['plan']): PublicUser
   email: user.email,
   name: user.name,
   plan: plan ?? (user.plan as PublicUser['plan']),
+  authProvider: user.authProvider === 'google' ? 'google' : 'email',
   createdAt: user.createdAt.toISOString(),
   lastLoginAt: user.lastLoginAt ? user.lastLoginAt.toISOString() : null,
 });
@@ -88,16 +90,31 @@ export const registerUser = async (
   const name = request.name?.trim() || null;
 
   if (useMemoryStore()) {
-    if (memoryStore.findUserByEmail(email)) {
+    const existing = memoryStore.findUserByEmail(email);
+    if (existing) {
+      if (!existing.passwordHash) {
+        throw new AppError(
+          'EMAIL_ALREADY_EXISTS',
+          'Email already registered with Google. Please sign in with Google.',
+          409,
+        );
+      }
       throw new AppError('EMAIL_ALREADY_EXISTS', 'An account with this email already exists', 409);
     }
-    const user = memoryStore.createUser({ email, name, passwordHash });
+    const user = memoryStore.createUser({ email, name, passwordHash, authProvider: 'email' });
     const token = await createSessionForUser(user.id, meta);
     return { token, user: asPublic(user) };
   }
 
   const existing = await prisma.user.findUnique({ where: { email } });
   if (existing) {
+    if (!existing.passwordHash) {
+      throw new AppError(
+        'EMAIL_ALREADY_EXISTS',
+        'Email already registered with Google. Please sign in with Google.',
+        409,
+      );
+    }
     throw new AppError('EMAIL_ALREADY_EXISTS', 'An account with this email already exists', 409);
   }
 
@@ -118,7 +135,13 @@ export const loginUser = async (
   const email = normalizeEmail(request.email);
   if (useMemoryStore()) {
     const user = memoryStore.findUserByEmail(email);
-    if (!user || !(await verifyPassword(request.password, user.passwordHash))) {
+    if (!user) {
+      throw new AppError('INVALID_CREDENTIALS', 'Invalid email or password', 401);
+    }
+    if (!user.passwordHash) {
+      throw new AppError('INVALID_CREDENTIALS', 'Please sign in with Google', 401);
+    }
+    if (!(await verifyPassword(request.password, user.passwordHash))) {
       throw new AppError('INVALID_CREDENTIALS', 'Invalid email or password', 401);
     }
     memoryStore.updateUser(user.id, { lastLoginAt: new Date() });
@@ -127,7 +150,13 @@ export const loginUser = async (
   }
 
   const user = await prisma.user.findUnique({ where: { email } });
-  if (!user || !(await verifyPassword(request.password, user.passwordHash))) {
+  if (!user) {
+    throw new AppError('INVALID_CREDENTIALS', 'Invalid email or password', 401);
+  }
+  if (!user.passwordHash) {
+    throw new AppError('INVALID_CREDENTIALS', 'Please sign in with Google', 401);
+  }
+  if (!(await verifyPassword(request.password, user.passwordHash))) {
     throw new AppError('INVALID_CREDENTIALS', 'Invalid email or password', 401);
   }
   const updated = await prisma.user.update({
@@ -136,6 +165,68 @@ export const loginUser = async (
   });
   const token = await createSessionForUser(user.id, meta);
   return { token, user: asPublic(updated) };
+};
+
+export const loginWithGoogle = async (
+  credential: string,
+  meta?: { userAgent?: string; ipAddress?: string },
+): Promise<AuthTokenData> => {
+  const payload = await verifyGoogleIdToken(credential);
+  const now = new Date();
+
+  if (useMemoryStore()) {
+    let user = memoryStore.findUserByEmail(payload.email);
+    if (user) {
+      memoryStore.updateUser(user.id, {
+        lastLoginAt: now,
+        googleSub: user.googleSub ?? payload.sub,
+        name: user.name || payload.name,
+      });
+      user = memoryStore.findUserById(user.id)!;
+    } else {
+      user = memoryStore.createUser({
+        email: payload.email,
+        name: payload.name,
+        passwordHash: null,
+        authProvider: 'google',
+        googleSub: payload.sub,
+      });
+      memoryStore.updateUser(user.id, { lastLoginAt: now });
+      user = memoryStore.findUserById(user.id)!;
+    }
+    const token = await createSessionForUser(user.id, meta);
+    return { token, user: asPublic(user) };
+  }
+
+  const existing = await prisma.user.findUnique({ where: { email: payload.email } });
+  const user = existing
+    ? await prisma.user.update({
+        where: { id: existing.id },
+        data: {
+          lastLoginAt: now,
+          googleSub: existing.googleSub ?? payload.sub,
+          name: existing.name || payload.name,
+        },
+      })
+    : await prisma.user.create({
+        data: {
+          email: payload.email,
+          name: payload.name,
+          passwordHash: null,
+          authProvider: 'google',
+          googleSub: payload.sub,
+          lastLoginAt: now,
+        },
+      });
+
+  if (!existing) {
+    await prisma.subscription.create({
+      data: { userId: user.id, plan: 'FREE', status: 'INACTIVE', provider: 'NONE' },
+    });
+  }
+
+  const token = await createSessionForUser(user.id, meta);
+  return { token, user: asPublic(user) };
 };
 
 export const logoutUser = async (token: string | null): Promise<void> => {
@@ -191,7 +282,7 @@ export const forgotPassword = async (request: ForgotPasswordRequest): Promise<{ 
 
   if (useMemoryStore()) {
     const user = memoryStore.findUserByEmail(email);
-    if (user) {
+    if (user?.passwordHash) {
       memoryStore.createResetToken({ userId: user.id, tokenHash, expiresAt });
       const resetUrl = `${config.appUrl}/reset-password?token=${token}`;
       await emailService.sendPasswordResetEmail(user.email, resetUrl);
@@ -200,7 +291,7 @@ export const forgotPassword = async (request: ForgotPasswordRequest): Promise<{ 
   }
 
   const user = await prisma.user.findUnique({ where: { email } });
-  if (user) {
+  if (user?.passwordHash) {
     await prisma.passwordResetToken.create({
       data: { userId: user.id, tokenHash, expiresAt },
     });
@@ -248,11 +339,14 @@ export const resetPassword = async (request: ResetPasswordRequest): Promise<{ ok
 
 export const deleteAccount = async (
   user: PublicUser,
-  password: string,
+  password?: string,
 ): Promise<void> => {
   if (useMemoryStore()) {
     const storeUser = memoryStore.findUserById(user.id);
-    if (!storeUser || !(await verifyPassword(password, storeUser.passwordHash))) {
+    if (!storeUser) {
+      throw new AppError('INVALID_CREDENTIALS', 'Password is incorrect', 401);
+    }
+    if (storeUser.passwordHash && !(await verifyPassword(password ?? '', storeUser.passwordHash))) {
       throw new AppError('INVALID_CREDENTIALS', 'Password is incorrect', 401);
     }
     memoryStore.deleteUser(user.id);
@@ -260,7 +354,10 @@ export const deleteAccount = async (
   }
 
   const dbUser = await prisma.user.findUnique({ where: { id: user.id } });
-  if (!dbUser || !(await verifyPassword(password, dbUser.passwordHash))) {
+  if (!dbUser) {
+    throw new AppError('INVALID_CREDENTIALS', 'Password is incorrect', 401);
+  }
+  if (dbUser.passwordHash && !(await verifyPassword(password ?? '', dbUser.passwordHash))) {
     throw new AppError('INVALID_CREDENTIALS', 'Password is incorrect', 401);
   }
   await prisma.user.delete({ where: { id: user.id } });

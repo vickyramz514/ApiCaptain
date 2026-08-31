@@ -23,11 +23,19 @@ test('getApiConfig applies defaults', () => {
   assert.equal(config.host, '0.0.0.0');
   assert.equal(config.rateLimitMax, 60);
   assert.ok(config.authSecret);
+  assert.equal(config.googleClientId, '');
 });
 
 test('getWebConfig reads NEXT_PUBLIC_API_URL', () => {
   const config = getWebConfig({ NEXT_PUBLIC_API_URL: 'https://api.example.com' });
   assert.equal(config.apiUrl, 'https://api.example.com');
+});
+
+test('getWebConfig reads Google client id', () => {
+  const config = getWebConfig({
+    NEXT_PUBLIC_GOOGLE_CLIENT_ID: '343746941144-example.apps.googleusercontent.com',
+  });
+  assert.equal(config.googleClientId, '343746941144-example.apps.googleusercontent.com');
 });
 
 test('plan limits and entitlements', () => {

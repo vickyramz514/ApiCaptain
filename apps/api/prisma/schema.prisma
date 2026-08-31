@@ -45,7 +45,11 @@ model User {
   id           String    @id @default(cuid())
   email        String    @unique
   name         String?
-  passwordHash String
+  /// Null for Google-only accounts
+  passwordHash String?
+  /// email | google
+  authProvider String    @default("email")
+  googleSub    String?   @unique
   plan         UserPlan  @default(FREE)
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt

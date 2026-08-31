@@ -258,3 +258,109 @@ test('account deletion requires confirmation', async () => {
     assert.equal(memoryStore.findUserByEmail('gone@example.com'), null);
   });
 });
+
+test('google sign-in creates session and blocks password login', async () => {
+  memoryStore.reset();
+  const app = createApp();
+  await withServer(app, async (baseUrl) => {
+    const created = await fetch(`${baseUrl}/api/v1/auth/google`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ credential: 'test:google@example.com:Gita' }),
+    });
+    const createdBody = await json(created);
+    assert.equal(created.status, 200);
+    const createdUser = (
+      createdBody.data as { user: { id: string; email: string; name: string; authProvider: string } }
+    ).user;
+    assert.equal(createdUser.email, 'google@example.com');
+    assert.equal(createdUser.name, 'Gita');
+    assert.equal(createdUser.authProvider, 'google');
+    const token = (createdBody.data as { token: string }).token;
+    assert.ok(token);
+
+    const me = await fetch(`${baseUrl}/api/v1/auth/me`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    assert.equal(me.status, 200);
+
+    const passwordLogin = await fetch(`${baseUrl}/api/v1/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: 'google@example.com', password: 'Secret123' }),
+    });
+    const passwordBody = await json(passwordLogin);
+    assert.equal(passwordLogin.status, 401);
+    assert.equal((passwordBody.error as { message: string }).message, 'Please sign in with Google');
+
+    const register = await fetch(`${baseUrl}/api/v1/auth/register`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: 'google@example.com', password: 'Secret123' }),
+    });
+    const registerBody = await json(register);
+    assert.equal(register.status, 409);
+    assert.match(
+      (registerBody.error as { message: string }).message,
+      /sign in with Google/i,
+    );
+
+    const again = await fetch(`${baseUrl}/api/v1/auth/google`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ credential: 'test:google@example.com:Gita' }),
+    });
+    const againBody = await json(again);
+    assert.equal(again.status, 200);
+    assert.equal((againBody.data as { user: { id: string } }).user.id, createdUser.id);
+
+    const deleted = await fetch(`${baseUrl}/api/v1/account`, {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ confirmation: 'DELETE' }),
+    });
+    assert.equal(deleted.status, 200);
+    assert.equal(memoryStore.findUserByEmail('google@example.com'), null);
+  });
+});
+
+test('google sign-in links an existing email account without disabling password login', async () => {
+  memoryStore.reset();
+  const app = createApp();
+  await withServer(app, async (baseUrl) => {
+    await fetch(`${baseUrl}/api/v1/auth/register`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: 'both@example.com', password: 'Secret123', name: 'Both' }),
+    });
+
+    const google = await fetch(`${baseUrl}/api/v1/auth/google`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ credential: 'test:both@example.com:Both' }),
+    });
+    assert.equal(google.status, 200);
+    const googleUser = ((await json(google)).data as { user: { authProvider: string } }).user;
+    assert.equal(googleUser.authProvider, 'email');
+
+    const login = await fetch(`${baseUrl}/api/v1/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: 'both@example.com', password: 'Secret123' }),
+    });
+    assert.equal(login.status, 200);
+  });
+});
+
+test('google sign-in rejects a missing credential', async () => {
+  memoryStore.reset();
+  const app = createApp();
+  await withServer(app, async (baseUrl) => {
+    const missing = await fetch(`${baseUrl}/api/v1/auth/google`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({}),
+    });
+    assert.equal(missing.status, 400);
+  });
+});

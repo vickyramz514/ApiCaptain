@@ -6,9 +6,10 @@ import { FormEvent, Suspense, useState } from 'react';
 import { ApiClientError } from '../../lib/apiClient';
 import { useAuth } from '../../components/AuthProvider';
 import { SiteHeader } from '../../components/SiteHeader';
+import { GoogleAuthDivider, GoogleLoginButton } from '../../components/GoogleLoginButton';
 
 function LoginForm() {
-  const { signIn } = useAuth();
+  const { signIn, signInWithGoogle } = useAuth();
   const router = useRouter();
   const params = useSearchParams();
   const [email, setEmail] = useState('');
@@ -31,36 +32,53 @@ function LoginForm() {
   };
 
   return (
-    <form onSubmit={(event) => void onSubmit(event)} className="mt-6 space-y-4">
-      <label className="block text-sm text-slate-300">
-        Email
-        <input
-          type="email"
-          required
-          value={email}
-          onChange={(event) => setEmail(event.target.value)}
-          className="mt-1 w-full rounded-md border border-slate-700 bg-slate-950 px-3 py-2"
-        />
-      </label>
-      <label className="block text-sm text-slate-300">
-        Password
-        <input
-          type="password"
-          required
-          value={password}
-          onChange={(event) => setPassword(event.target.value)}
-          className="mt-1 w-full rounded-md border border-slate-700 bg-slate-950 px-3 py-2"
-        />
-      </label>
-      {error ? <p className="text-sm text-rose-400">{error}</p> : null}
-      <button
-        type="submit"
+    <>
+      <form onSubmit={(event) => void onSubmit(event)} className="mt-6 space-y-4">
+        <label className="block text-sm text-slate-300">
+          Email
+          <input
+            type="email"
+            required
+            value={email}
+            onChange={(event) => setEmail(event.target.value)}
+            className="mt-1 w-full rounded-md border border-slate-700 bg-slate-950 px-3 py-2"
+          />
+        </label>
+        <label className="block text-sm text-slate-300">
+          Password
+          <input
+            type="password"
+            required
+            value={password}
+            onChange={(event) => setPassword(event.target.value)}
+            className="mt-1 w-full rounded-md border border-slate-700 bg-slate-950 px-3 py-2"
+          />
+        </label>
+        {error ? <p className="text-sm text-rose-400">{error}</p> : null}
+        <button
+          type="submit"
+          disabled={loading}
+          className="w-full rounded-md bg-teal-500 px-4 py-2 font-medium text-slate-950 disabled:opacity-60"
+        >
+          {loading ? 'Signing in…' : 'Login'}
+        </button>
+      </form>
+      <GoogleAuthDivider />
+      <GoogleLoginButton
         disabled={loading}
-        className="w-full rounded-md bg-teal-500 px-4 py-2 font-medium text-slate-950 disabled:opacity-60"
-      >
-        {loading ? 'Signing in…' : 'Login'}
-      </button>
-    </form>
+        onError={setError}
+        onCredential={async (credential) => {
+          setLoading(true);
+          setError(null);
+          try {
+            await signInWithGoogle(credential);
+            router.push(params.get('next') || '/dashboard');
+          } finally {
+            setLoading(false);
+          }
+        }}
+      />
+    </>
   );
 }
 

@@ -1,6 +1,7 @@
 import { Router, type Router as ExpressRouter } from 'express';
 import {
   forgotPasswordController,
+  googleLoginController,
   loginController,
   logoutController,
   meController,
@@ -16,6 +17,7 @@ const authLimiter = createGenerateRateLimiter();
 
 authRoutes.post('/register', authLimiter, registerController);
 authRoutes.post('/login', authLimiter, loginController);
+authRoutes.post('/google', authLimiter, googleLoginController);
 authRoutes.post('/logout', optionalAuth, logoutController);
 authRoutes.post('/forgot-password', authLimiter, forgotPasswordController);
 authRoutes.post('/reset-password', authLimiter, resetPasswordController);

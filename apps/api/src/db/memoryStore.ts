@@ -1,12 +1,14 @@
 import { randomUUID } from 'node:crypto';
-import type { UserPlan } from '@apicaptain/types';
+import type { AuthProvider, UserPlan } from '@apicaptain/types';
 import type { BillingProviderId, SubscriptionStatusId } from '@apicaptain/config';
 
 export type StoreUser = {
   id: string;
   email: string;
   name: string | null;
-  passwordHash: string;
+  passwordHash: string | null;
+  authProvider: AuthProvider;
+  googleSub: string | null;
   plan: UserPlan;
   createdAt: Date;
   updatedAt: Date;
@@ -149,7 +151,9 @@ export class MemorySaasStore {
   createUser(input: {
     email: string;
     name: string | null;
-    passwordHash: string;
+    passwordHash?: string | null;
+    authProvider?: AuthProvider;
+    googleSub?: string | null;
     plan?: UserPlan;
   }): StoreUser {
     const now = new Date();
@@ -157,7 +161,9 @@ export class MemorySaasStore {
       id: randomUUID(),
       email: input.email,
       name: input.name,
-      passwordHash: input.passwordHash,
+      passwordHash: input.passwordHash ?? null,
+      authProvider: input.authProvider ?? 'email',
+      googleSub: input.googleSub ?? null,
       plan: input.plan ?? 'FREE',
       createdAt: now,
       updatedAt: now,

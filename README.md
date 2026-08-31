@@ -11,13 +11,14 @@ ApiCaptain is a multi-language API code generator with OpenAPI support, accounts
 3. OpenAPI / Swagger → structured clients
 4. Accounts, dashboard, saved projects, usage limits
 5. **Pro billing (₹499/month) via Razorpay** — checkout, webhooks, cancel-at-period-end
+6. Google Sign-In (same OAuth client as DataCaptain)
 
 ## Quick start
 
 ```bash
 pnpm install
 cp .env.example .env
-# set DATABASE_URL, AUTH_SECRET, and Razorpay test keys (see docs/phase-6.md)
+# set DATABASE_URL, AUTH_SECRET, Google client, and Razorpay test keys (see docs/phase-6.md)
 pnpm db:generate
 pnpm db:migrate
 pnpm dev

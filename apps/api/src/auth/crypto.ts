@@ -6,7 +6,10 @@ import type { User } from '@prisma/client';
 export const hashPassword = async (password: string): Promise<string> =>
   bcrypt.hash(password, 12);
 
-export const verifyPassword = async (password: string, passwordHash: string): Promise<boolean> => {
+export const verifyPassword = async (
+  password: string,
+  passwordHash: string | null | undefined,
+): Promise<boolean> => {
   if (!passwordHash || passwordHash.startsWith('$phase5_placeholder$')) {
     return false;
   }
@@ -23,6 +26,7 @@ export const toPublicUser = (user: User): PublicUser => ({
   email: user.email,
   name: user.name,
   plan: user.plan as UserPlan,
+  authProvider: user.authProvider === 'google' ? 'google' : 'email',
   createdAt: user.createdAt.toISOString(),
   lastLoginAt: user.lastLoginAt ? user.lastLoginAt.toISOString() : null,
 });
