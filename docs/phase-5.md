@@ -21,7 +21,7 @@ Sessions are stored hashed server-side. Clients send `Authorization: Bearer <tok
 
 Google Sign-In (`POST /api/v1/auth/google` with `{ credential }`) verifies a Google ID token with `google-auth-library` (`audience` = `GOOGLE_CLIENT_ID`). New Google users are created as FREE accounts with no password. Password login of Google-only users returns “Please sign in with Google”. Email register of an existing Google-only account returns the same guidance.
 
-Add this site’s origin to the shared Google OAuth client’s **Authorized JavaScript origins** (`http://localhost:3000` and the production site URL).
+Add this site’s origin to the shared Google OAuth client’s **Authorized JavaScript origins** (`http://localhost:3000`, `http://127.0.0.1:3000`, and the production site URL). Open the app at `http://localhost:3000`, not a LAN IP such as `http://192.168.x.x:3000`. Google Sign-In requires a reachable Postgres database (`DATABASE_URL`); a connection failure returns `503 DATABASE_UNAVAILABLE`.
 
 Password resets use `EmailService` (dev logs the link; production is provider-ready, no provider wired yet).
 

@@ -1,6 +1,7 @@
 'use client';
 
 import { GoogleLogin } from '@react-oauth/google';
+import { useEffect, useState } from 'react';
 import { ApiClientError } from '../lib/apiClient';
 
 interface GoogleLoginButtonProps {
@@ -16,6 +17,18 @@ export function GoogleLoginButton({
   onError,
   disabled = false,
 }: GoogleLoginButtonProps) {
+  const [mounted, setMounted] = useState(false);
+  const [originHint, setOriginHint] = useState<string | null>(null);
+
+  useEffect(() => {
+    setMounted(true);
+    if (typeof window === 'undefined') return;
+    const origin = window.location.origin;
+    if (/^https?:\/\/(\d{1,3}\.){3}\d{1,3}(?::\d+)?$/.test(origin)) {
+      setOriginHint(`Google Sign-In is not allowed from ${origin}. Use http://localhost:3000.`);
+    }
+  }, []);
+
   if (!clientId) {
     return (
       <button
@@ -28,31 +41,41 @@ export function GoogleLoginButton({
     );
   }
 
+  if (!mounted) {
+    return <div className="h-10" />;
+  }
+
   return (
-    <div className={`flex justify-center ${disabled ? 'pointer-events-none opacity-50' : ''}`}>
-      <GoogleLogin
-        onSuccess={(credentialResponse) => {
-          const credential = credentialResponse.credential;
-          if (!credential) {
-            onError?.('No credential received from Google');
-            return;
-          }
-          void onCredential(credential).catch((error: unknown) => {
+    <div className="space-y-2">
+      {originHint ? <p className="text-center text-xs text-amber-400">{originHint}</p> : null}
+      <div className={`flex justify-center ${disabled ? 'pointer-events-none opacity-50' : ''}`}>
+        <GoogleLogin
+          onSuccess={(credentialResponse) => {
+            const credential = credentialResponse.credential;
+            if (!credential) {
+              onError?.('No credential received from Google');
+              return;
+            }
+            void onCredential(credential).catch((error: unknown) => {
+              onError?.(
+                error instanceof ApiClientError ? error.message : 'Google sign-in failed',
+              );
+            });
+          }}
+          onError={() => {
             onError?.(
-              error instanceof ApiClientError ? error.message : 'Google sign-in failed',
+              originHint ??
+                'Google sign-in was cancelled or this origin is not authorized for the client ID.',
             );
-          });
-        }}
-        onError={() => {
-          onError?.('Google sign-in was cancelled or failed');
-        }}
-        useOneTap={false}
-        theme="filled_black"
-        size="large"
-        text="continue_with"
-        shape="rectangular"
-        width={320}
-      />
+          }}
+          useOneTap={false}
+          theme="filled_black"
+          size="large"
+          text="continue_with"
+          shape="rectangular"
+          width={320}
+        />
+      </div>
     </div>
   );
 }

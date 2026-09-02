@@ -33,6 +33,14 @@ const nextConfig: NextConfig = {
   transpilePackages: ['@apicaptain/types', '@apicaptain/config'],
   reactStrictMode: true,
   outputFileTracingRoot: monorepoRoot,
+  async headers() {
+    return [
+      {
+        source: '/:path*',
+        headers: [{ key: 'Cross-Origin-Opener-Policy', value: 'same-origin-allow-popups' }],
+      },
+    ];
+  },
 };
 
 export default nextConfig;

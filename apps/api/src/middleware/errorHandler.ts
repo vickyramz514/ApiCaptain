@@ -1,6 +1,7 @@
 import type { NextFunction, Request, Response } from 'express';
 import { BillingError } from '@apicaptain/billing';
 import { AppError } from '../utils/errors.js';
+import { prismaErrorToAppError } from '../utils/prismaErrors.js';
 import { sendError } from '../utils/response.js';
 
 export const notFoundHandler = (_req: Request, res: Response): void => {
@@ -21,6 +22,15 @@ export const errorHandler = (
       code: error.code,
       message: error.message,
       details: error instanceof AppError ? error.details : undefined,
+    });
+    return;
+  }
+
+  const prismaError = prismaErrorToAppError(error);
+  if (prismaError) {
+    sendError(res, prismaError.statusCode, {
+      code: prismaError.code,
+      message: prismaError.message,
     });
     return;
   }
