@@ -48,3 +48,12 @@ For tests without Postgres, the API uses `SAAS_STORE=memory` automatically in th
 | `pnpm build` | Build all |
 | `pnpm test` | Unit + API tests |
 | `pnpm db:migrate` | Apply migrations |
+
+## Railway (API)
+
+This is a **pnpm workspace**. Do **not** set the service Root Directory to `/apps/api` — Railway will run `npm install` there and fail with `Unsupported URL Type "workspace:"`.
+
+1. Leave **Root Directory** empty (repo root).
+2. Commit `railway.toml` (this repo already has it).
+3. Redeploy. The API is built with `pnpm --filter @apicaptain/api... build`.
+4. Link Postgres so `DATABASE_URL` is injected. Set `AUTH_SECRET`, `CORS_ORIGIN`, `APP_URL`, Google, and Razorpay variables in the service.

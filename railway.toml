@@ -1,0 +1,13 @@
+# ApiCaptain API on Railway.
+# Leave "Root Directory" EMPTY in the Railway service settings.
+# Setting it to /apps/api makes Railway run npm install and fail on workspace:*.
+
+[build]
+builder = "NIXPACKS"
+buildCommand = "pnpm --filter @apicaptain/api... build"
+
+[deploy]
+startCommand = "pnpm --filter @apicaptain/api db:migrate && pnpm --filter @apicaptain/api start"
+healthcheckPath = "/health"
+healthcheckTimeout = 30
+restartPolicyType = "ON_FAILURE"

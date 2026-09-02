@@ -32,7 +32,8 @@
     "cors": "^2.8.5",
     "express": "^5.1.0",
     "express-rate-limit": "^7.5.0",
-    "google-auth-library": "^10.9.1"
+    "google-auth-library": "^10.9.1",
+    "prisma": "^6.8.2"
   },
   "devDependencies": {
     "@types/bcryptjs": "^3.0.0",
@@ -40,7 +41,6 @@
     "@types/cors": "^2.8.18",
     "@types/express": "^5.0.2",
     "@types/node": "^22.15.21",
-    "prisma": "^6.8.2",
     "tsx": "^4.19.4",
     "typescript": "^5.8.3"
   }

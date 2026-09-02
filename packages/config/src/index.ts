@@ -222,7 +222,7 @@ export const getApiConfig = (env?: EnvMap): ApiConfig => {
   const source = readEnv(env);
   return {
     host: source.API_HOST ?? '0.0.0.0',
-    port: toNumber(source.API_PORT, 4000),
+    port: toNumber(source.API_PORT ?? source.PORT, 4000),
     corsOrigin: source.CORS_ORIGIN ?? 'http://localhost:3000',
     nodeEnv: source.NODE_ENV ?? 'development',
     databaseUrl: source.DATABASE_URL ?? '',

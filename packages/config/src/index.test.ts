@@ -26,6 +26,11 @@ test('getApiConfig applies defaults', () => {
   assert.equal(config.googleClientId, '');
 });
 
+test('getApiConfig prefers API_PORT then PORT', () => {
+  assert.equal(getApiConfig({ PORT: '8080' }).port, 8080);
+  assert.equal(getApiConfig({ API_PORT: '4001', PORT: '8080' }).port, 4001);
+});
+
 test('getWebConfig reads NEXT_PUBLIC_API_URL', () => {
   const config = getWebConfig({ NEXT_PUBLIC_API_URL: 'https://api.example.com' });
   assert.equal(config.apiUrl, 'https://api.example.com');
